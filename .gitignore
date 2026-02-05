@@ -3,6 +3,8 @@
 *.vscode
 *.sln
 *.zed
+*.claude
+CLAUDE.md
 
 # Compiled & Build
 Build/
@@ -11,10 +13,6 @@ Build/
 *.exe
 *.o
 *.so
-
-# Game Content
-GameContent/
-Springuins/
 
 # Logs & temp
 *.log
@@ -28,5 +26,3 @@ temp/
 .Trashes
 .ehthumbs.db
 Thumbs.db
-
-.clangd

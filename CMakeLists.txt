@@ -1,172 +1,83 @@
 cmake_minimum_required(VERSION 3.10)
-project(Springuins)
+
+if(NOT PROJECT_NAME)
+    project(Sapling)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 
-function(bundle_macos_app target app_name assets_src dylibs)
-    set(BUILD_DIR "${CMAKE_SOURCE_DIR}/Build")
-    set(APP_DIR "${CMAKE_BINARY_DIR}/${app_name}.app")
-    set(MACOS_DIR "${APP_DIR}/Contents/MacOS")
-    set(RESOURCES_DIR "${APP_DIR}/Contents/Resources")
+# ── Paths ─────────────────────────────────────────────
+set(SAPLING_ROOT    ${CMAKE_CURRENT_SOURCE_DIR})
+set(SAPLING_INCLUDE ${SAPLING_ROOT}/include)
+set(SAPLING_SRC     ${SAPLING_ROOT}/src)
+set(THIRD_PARTY     ${SAPLING_ROOT}/third_party)
 
-    set_target_properties(${target} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${MACOS_DIR}"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH "@executable_path"
-    )
+set(FMOD_ROOT       ${THIRD_PARTY}/fmod)
+set(FMOD_CORE_INC   ${FMOD_ROOT}/core/inc)
+set(FMOD_STUDIO_INC ${FMOD_ROOT}/studio/inc)
+set(FMOD_CORE_LIB   ${FMOD_ROOT}/core/lib)
+set(FMOD_STUDIO_LIB ${FMOD_ROOT}/studio/lib)
 
-    foreach(dylib ${dylibs})
-        add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dylib}" "${MACOS_DIR}"
-        )
-    endforeach()
+# ── Engine source files ───────────────────────────────
+set(SAPLING_SOURCES
+    ${SAPLING_SRC}/Core/Engine.cpp
+    ${SAPLING_SRC}/Core/Scene.cpp
+    ${SAPLING_SRC}/Core/AssetManager.cpp
+    ${SAPLING_SRC}/Core/AudioEngine.cpp
+    ${SAPLING_SRC}/Core/Input.cpp
+    ${SAPLING_SRC}/ECS/Entity.cpp
+    ${SAPLING_SRC}/ECS/EntityManager.cpp
+    ${SAPLING_SRC}/ECS/Component.cpp
+    ${SAPLING_SRC}/Renderer/Sprout.cpp
+    ${SAPLING_SRC}/Renderer/Window.cpp
+    ${SAPLING_SRC}/Renderer/Texture.cpp
+    ${SAPLING_SRC}/Renderer/Font.cpp
+    ${SAPLING_SRC}/Renderer/StandaloneTexture.cpp
+    ${SAPLING_SRC}/Utility/Physics.cpp
+)
 
-    add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${RESOURCES_DIR}/Assets"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${assets_src}" "${RESOURCES_DIR}/Assets"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/Build/Icon.icns" "${RESOURCES_DIR}/Icon.icns"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/Build/Info.plist" "${APP_DIR}/Contents/Info.plist"
-    )
-endfunction()
-
-if(APPLE AND CMAKE_GENERATOR STREQUAL "Xcode")
-    add_executable(${CMAKE_PROJECT_NAME} MACOSX_BUNDLE)
-else()
-    add_executable(${CMAKE_PROJECT_NAME})
+# ── macOS: Objective-C++ Metal backend ────────────────
+if(APPLE)
+    list(APPEND SAPLING_SOURCES ${SAPLING_SRC}/Renderer/SproutMetal.mm)
 endif()
 
-if(APPLE)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/SaplingEngine/Renderer/SproutMetal.mm")
-    set_source_files_properties("${CMAKE_SOURCE_DIR}/SaplingEngine/Renderer/SproutMetal.mm"
-                                PROPERTIES COMPILE_FLAGS "-x objective-c++")
-endif()
-
-file(GLOB_RECURSE ENGINE_SOURCES 
-    "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/main.cpp"
-    "${CMAKE_SOURCE_DIR}/SaplingEngine/**/*.cpp"
-    "${CMAKE_SOURCE_DIR}/SaplingEngine/**/*.hpp"
+# ── Include directories ──────────────────────────────
+# include/          — engine headers (Core/, ECS/, Renderer/, Utility/)
+# third_party/      — glm/, sokol/ resolve here
+# third_party/stb/  — stb_truetype.h etc (Font.hpp uses <stb/stb_truetype.h>)
+# fmod inc dirs     — fmod.hpp, fmod_studio.hpp resolve here
+set(SAPLING_INCLUDE_DIRS
+    ${SAPLING_INCLUDE}
+    ${THIRD_PARTY}
+    ${THIRD_PARTY}/stb
+    ${FMOD_CORE_INC}
+    ${FMOD_STUDIO_INC}
 )
-file(GLOB_RECURSE GAME_CONTENT_SOURCES 
-    "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/**/*.cpp"
-    "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/**/*.hpp"
-)
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${ENGINE_SOURCES} ${GAME_CONTENT_SOURCES})
 
-set(FMOD_ROOT "${CMAKE_SOURCE_DIR}/SaplingEngine/thirdparty/fmod")
-set(FMOD_CORE_LIB_DIR "${FMOD_ROOT}/core/lib")
-set(FMOD_STUDIO_LIB_DIR "${FMOD_ROOT}/studio/lib")
-
+# ── Link libraries ────────────────────────────────────
+set(SAPLING_LINK_LIBS)
 if(APPLE)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+    list(APPEND SAPLING_LINK_LIBS
         "-framework Cocoa"
         "-framework QuartzCore"
         "-framework Metal"
         "-framework MetalKit"
-        "${FMOD_CORE_LIB_DIR}/libfmod.dylib"
-        "${FMOD_STUDIO_LIB_DIR}/libfmodstudio.dylib"
+        "${FMOD_CORE_LIB}/libfmod.dylib"
+        "${FMOD_STUDIO_LIB}/libfmodstudio.dylib"
     )
-
-    # copy FMOD dylibs next to the binary
-    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${FMOD_CORE_LIB_DIR}/libfmod.dylib"
-            "${FMOD_STUDIO_LIB_DIR}/libfmodstudio.dylib"
-            $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>
+    set(SAPLING_FMOD_DYLIBS
+        "${FMOD_CORE_LIB}/libfmod.dylib"
+        "${FMOD_STUDIO_LIB}/libfmodstudio.dylib"
     )
-
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH "@executable_path"
-    )
-
 elseif(WIN32)
-    set(FMOD_CORE_LIB_DIR "${FMOD_ROOT}/core/lib/x86")
-    set(FMOD_STUDIO_LIB_DIR "${FMOD_ROOT}/studio/lib/x86")
-
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-        "${FMOD_CORE_LIB_DIR}/fmod_vc.lib"
-        "${FMOD_STUDIO_LIB_DIR}/fmodstudio_vc.lib"
+    set(FMOD_CORE_LIB_WIN  ${FMOD_CORE_LIB}/x86)
+    set(FMOD_STUDIO_LIB_WIN ${FMOD_STUDIO_LIB}/x86)
+    list(APPEND SAPLING_LINK_LIBS
+        "${FMOD_CORE_LIB_WIN}/fmod_vc.lib"
+        "${FMOD_STUDIO_LIB_WIN}/fmodstudio_vc.lib"
     )
-
-    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${FMOD_CORE_LIB_DIR}/fmod.dll"
-            "${FMOD_STUDIO_LIB_DIR}/fmodstudio.dll"
-            $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>
-    )
-endif()
-
-# set asset path for debug builds
-if(APPLE OR WIN32)
-    target_compile_definitions(${CMAKE_PROJECT_NAME}
-        PUBLIC 
-            $<$<CONFIG:Debug>:ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Assets/">
-            $<$<CONFIG:Debug>:DEBUG>
-    )
-endif()
-
-# includes
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/SaplingEngine
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/Core
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/ECS
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/Utility
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/Renderer
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/thirdparty
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/thirdparty/stb
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/thirdparty/fmod/studio/inc
-    ${CMAKE_SOURCE_DIR}/SaplingEngine/thirdparty/fmod/core/inc
-    ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Scenes
-    ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Systems
-    ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Components
-    ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Prefabs
-    /opt/homebrew/include
-)
-
-# Xcode-only builds
-if(APPLE AND CMAKE_GENERATOR STREQUAL "Xcode")
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Build/Info.plist"
-    )
-
-    if(CMAKE_CONFIGURATION_TYPES)
-        add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory
-                "${CMAKE_BINARY_DIR}/Release/${CMAKE_PROJECT_NAME}.app/Contents/Resources/Assets"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Assets"
-                "${CMAKE_BINARY_DIR}/Release/${CMAKE_PROJECT_NAME}.app/Contents/Resources/Assets"
-        )
-    endif()
-    
-    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_SOURCE_DIR}/Build/Icon.icns"
-            "${CMAKE_BINARY_DIR}/Release/${CMAKE_PROJECT_NAME}.app/Contents/Resources/Icon.icns"
-    )
-    
-endif()
-
-# non-Xcode macOS builds
-if(APPLE AND NOT CMAKE_GENERATOR STREQUAL "Xcode" AND CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(FMOD_DYLIBS
-        "${FMOD_CORE_LIB_DIR}/libfmod.dylib"
-        "${FMOD_STUDIO_LIB_DIR}/libfmodstudio.dylib"
-    )
-    bundle_macos_app(${CMAKE_PROJECT_NAME} "${CMAKE_PROJECT_NAME}" "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Assets" "${FMOD_DYLIBS}")
-endif()
-
-# windows builds
-if (WIN32)
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        WIN32_EXECUTABLE $<IF:$<CONFIG:Release>,YES,NO>
-    )
-
-    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Checking config: $<CONFIG>"
-        COMMAND ${CMAKE_COMMAND} -E $<IF:$<CONFIG:Release>,copy_directory,echo>
-            "${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/Assets"
-            "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/Assets"
+    set(SAPLING_FMOD_DLLS
+        "${FMOD_CORE_LIB_WIN}/fmod.dll"
+        "${FMOD_STUDIO_LIB_WIN}/fmodstudio.dll"
     )
 endif()
