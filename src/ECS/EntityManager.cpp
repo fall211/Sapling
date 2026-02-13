@@ -4,6 +4,9 @@
 //
 
 #include "ECS/EntityManager.hpp"
+#include "Core/PrefabLoader.hpp"
+
+#include <nlohmann/json.hpp>
 
 EntityManager::EntityManager()
 {
@@ -50,7 +53,7 @@ auto EntityManager::addEntity(const TagList& tags) -> std::shared_ptr<Entity>
 }
 
 auto EntityManager::getEntities() -> EntityList&
-{    
+{
     return m_entities;
 }
 
@@ -68,18 +71,16 @@ void EntityManager::addTagToEntity(const std::shared_ptr<Entity>& entity, const 
 void EntityManager::removeTagFromEntity(const std::shared_ptr<Entity>& entity, const std::string& tag)
 {
     entity->removeTag(tag);
-    
-    // Get the entity list with the given tag
+
     auto& entityListWithTag = m_entityMap[tag];
-    
-    // Use std::remove_if with a comparison that checks entity IDs
+
     entityListWithTag.erase(
         std::remove_if(
-            entityListWithTag.begin(), 
+            entityListWithTag.begin(),
             entityListWithTag.end(),
             [&entity](const std::shared_ptr<Entity>& e) {
-                // Compare by entity ID or some unique identifier
-                return e.get() == entity.get(); // Compare the raw pointers
+
+                return e.get() == entity.get();
             }
         ),
         entityListWithTag.end()
@@ -101,16 +102,16 @@ void EntityManager::destroyEntity(const std::shared_ptr<Entity>& entity)
 void EntityManager::clear()
 {
     m_spatialGrid.clear();
-    
+
     m_entities.clear();
     m_entitiesToAdd.clear();
-    
+
     for (auto& [tag, entityList] : m_entityMap)
     {
         entityList.clear();
     }
     m_entityMap.clear();
-    
+
     m_idCounter = 0;
 }
 
@@ -149,4 +150,31 @@ auto EntityManager::getEntitiesInRange(const std::string& tag, EntityList& entit
         }
     }
     return entitiesWithTagInRange;
+}
+
+auto EntityManager::loadPrefab(const std::string& prefabPath) -> std::shared_ptr<Entity>
+{
+    auto& loader = PrefabLoader::getInstance();
+    nlohmann::json prefabJson = loader.loadFile(prefabPath);
+    return loader.createEntityFromJson(prefabJson, *this);
+}
+
+auto EntityManager::loadPrefab(const std::string& prefabPath, const nlohmann::json& overrides) -> std::shared_ptr<Entity>
+{
+    auto& loader = PrefabLoader::getInstance();
+    nlohmann::json prefabJson = loader.loadFile(prefabPath);
+
+    if (overrides.contains("name")) prefabJson["name"] = overrides["name"];
+    if (overrides.contains("tags")) prefabJson["tags"] = overrides["tags"];
+
+    for (auto& [compName, compData] : overrides.items()) {
+        if (compName == "name" || compName == "tags") continue;
+        if (prefabJson["components"].contains(compName)) {
+            prefabJson["components"][compName].merge_patch(compData);
+        } else {
+            prefabJson["components"][compName] = compData;
+        }
+    }
+
+    return loader.createEntityFromJson(prefabJson, *this);
 }

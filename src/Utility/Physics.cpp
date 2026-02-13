@@ -21,8 +21,8 @@ auto Physics2D::bBoxCollision(const std::shared_ptr<Entity>& e0, const std::shar
     const glm::vec2 pivotOffset0 = scaledSize0 * (Sprout::getPivotOffset(t0.pivot) - glm::vec2(0.5f));
     const glm::vec2 pivotOffset1 = scaledSize1 * (Sprout::getPivotOffset(t1.pivot) - glm::vec2(0.5f));
 
-    const glm::vec2 pos0 = t0.position + pivotOffset0;
-    const glm::vec2 pos1 = t1.position + pivotOffset1;
+    const glm::vec2 pos0 = glm::vec2(t0.position) + pivotOffset0;
+    const glm::vec2 pos1 = glm::vec2(t1.position) + pivotOffset1;
 
     const glm::vec2 dr = pos0 - pos1;
     const float dx = fabs(dr.x);
@@ -47,8 +47,8 @@ auto bCircleCollision(const std::shared_ptr<Entity>& e0, const std::shared_ptr<E
     
     if (e0->getId() == e1->getId()) return {0, 0}; // ignore self collision
     
-    const glm::vec2 pos0 = e0->getComponent<Comp::Transform>().position;
-    const glm::vec2 pos1 = e1->getComponent<Comp::Transform>().position;
+    const glm::vec2 pos0 = glm::vec2(e0->getComponent<Comp::Transform>().position);
+    const glm::vec2 pos1 = glm::vec2(e1->getComponent<Comp::Transform>().position);
 
     const float rsum = e0->getComponent<Comp::BCircle>().radius + e1->getComponent<Comp::BCircle>().radius;
     const float dist2 = glm::distance(pos0, pos1);
@@ -65,10 +65,10 @@ auto bCircleCollision(const std::shared_ptr<Entity>& e0, const std::shared_ptr<E
 auto bBoxCircleCollision(const std::shared_ptr<Entity>& eBox, const std::shared_ptr<Entity>& eCircle) -> glm::vec2
 {
     
-    const glm::vec2 circlePos = eCircle->getComponent<Comp::Transform>().position;
+    const glm::vec2 circlePos = glm::vec2(eCircle->getComponent<Comp::Transform>().position);
     const float circleR = eCircle->getComponent<Comp::BCircle>().radius;
 
-    const glm::vec2 boxPos = eBox->getComponent<Comp::Transform>().position;
+    const glm::vec2 boxPos = glm::vec2(eBox->getComponent<Comp::Transform>().position);
     const float boxW = eBox->getComponent<Comp::BBox>().w;
     const float boxH = eBox->getComponent<Comp::BBox>().h;
     float boxLeft = boxPos.x - boxW / 2.0f;
@@ -129,8 +129,8 @@ auto Physics2D::collisionData(const std::shared_ptr<Entity>& e0, const std::shar
     const glm::vec2 pivotOffset0 = scaledSize0 * (Sprout::getPivotOffset(t0.pivot) - glm::vec2(0.5f));
     const glm::vec2 pivotOffset1 = scaledSize1 * (Sprout::getPivotOffset(t1.pivot) - glm::vec2(0.5f));
 
-    const glm::vec2 pos0 = t0.position + pivotOffset0;
-    const glm::vec2 pos1 = t1.position + pivotOffset1;
+    const glm::vec2 pos0 = glm::vec2(t0.position) + pivotOffset0;
+    const glm::vec2 pos1 = glm::vec2(t1.position) + pivotOffset1;
 
     const glm::vec2 dr = pos0 - pos1;
     const float dx = fabs(dr.x);

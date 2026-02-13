@@ -1,5 +1,5 @@
 //
-//  EngineTemplates.hpp
+//  EngineT.hpp
 //  SaplingEngine
 //
 
@@ -8,17 +8,17 @@
 #include "Core/Engine.hpp"
 #include "Core/Scene.hpp"
 #include "Core/SceneMessage.hpp"
-#include "Utility/Debug.hpp"
+#include "Core/Logger.hpp"
 
 template <typename T>
 bool Engine::sendToCurrentScene(const std::string& type, const T& data)
 {
     if (!m_currentScene)
     {
-        Debug::log("ERROR: no current scene to send message to");
+        Logger::error("No current scene to send message to");
         return false;
     }
-    
+
     SceneMessage message(type, data);
     return m_currentScene->onMessage(message);
 }
@@ -29,10 +29,10 @@ bool Engine::sendToScene(const std::string& sceneName, const std::string& type, 
     auto sceneIt = m_scenes.find(sceneName);
     if (sceneIt == m_scenes.end())
     {
-        Debug::log("ERROR: scene not found: " + sceneName);
+        Logger::error("Scene not found: " + sceneName);
         return false;
     }
-    
+
     SceneMessage message(type, data);
     return sceneIt->second->onMessage(message);
 }

@@ -1,0 +1,45 @@
+{
+    "components": {
+        "MeshRenderer": {
+            "castShadow": true,
+            "material": {
+                "baseColor": [
+                    0.0,
+                    1.0,
+                    0.8823528289794922,
+                    1.0
+                ],
+                "shaderType": "Mesh3D",
+                "specularStrength": 0.5
+            },
+            "mesh": {
+                "name": "cube",
+                "path": "Models/cube/cube.obj"
+            }
+        },
+        "Transform3D": {
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "velocity": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        }
+    },
+    "name": "cube",
+    "tags": []
+}

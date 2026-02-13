@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "Utility/Debug.hpp"
+#include "Core/Logger.hpp"
 #include <any>
 #include <string>
 
@@ -30,7 +30,7 @@ public:
         } 
         catch (const std::bad_any_cast& e)
         {
-            Debug::log("ERROR: bad cast in SceneMessage. requested type doesnt match stored type");
+            Logger::error("Bad cast in SceneMessage: requested type doesn't match stored type");
             return T();
         }
     }

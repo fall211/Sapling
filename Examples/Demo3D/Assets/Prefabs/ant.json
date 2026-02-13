@@ -1,0 +1,49 @@
+{
+    "components": {
+        "MeshRenderer": {
+            "castShadow": true,
+            "material": {
+                "baseColor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "diffuseTexture": {
+                    "name": "Texture_Ant_bcolor",
+                    "path": "Models/ant/Texture_Ant_bcolor.png"
+                },
+                "shaderType": "Mesh3D",
+                "specularStrength": 0.5
+            },
+            "mesh": {
+                "name": "Ant",
+                "path": "Models/ant/Ant.obj"
+            }
+        },
+        "Transform3D": {
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                40.0,
+                40.0,
+                40.0
+            ],
+            "velocity": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        }
+    },
+    "name": "ant",
+    "tags": []
+}

@@ -6,7 +6,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 
-# ── Paths ─────────────────────────────────────────────
+# paths
 set(SAPLING_ROOT    ${CMAKE_CURRENT_SOURCE_DIR})
 set(SAPLING_INCLUDE ${SAPLING_ROOT}/include)
 set(SAPLING_SRC     ${SAPLING_ROOT}/src)
@@ -18,13 +18,15 @@ set(FMOD_STUDIO_INC ${FMOD_ROOT}/studio/inc)
 set(FMOD_CORE_LIB   ${FMOD_ROOT}/core/lib)
 set(FMOD_STUDIO_LIB ${FMOD_ROOT}/studio/lib)
 
-# ── Engine source files ───────────────────────────────
+# engine src files
 set(SAPLING_SOURCES
     ${SAPLING_SRC}/Core/Engine.cpp
     ${SAPLING_SRC}/Core/Scene.cpp
     ${SAPLING_SRC}/Core/AssetManager.cpp
     ${SAPLING_SRC}/Core/AudioEngine.cpp
     ${SAPLING_SRC}/Core/Input.cpp
+    ${SAPLING_SRC}/Core/Logger.cpp
+    ${SAPLING_SRC}/Core/PrefabLoader.cpp
     ${SAPLING_SRC}/ECS/Entity.cpp
     ${SAPLING_SRC}/ECS/EntityManager.cpp
     ${SAPLING_SRC}/ECS/Component.cpp
@@ -32,29 +34,67 @@ set(SAPLING_SOURCES
     ${SAPLING_SRC}/Renderer/Window.cpp
     ${SAPLING_SRC}/Renderer/Texture.cpp
     ${SAPLING_SRC}/Renderer/Font.cpp
-    ${SAPLING_SRC}/Renderer/StandaloneTexture.cpp
+
+    ${SAPLING_SRC}/Renderer/Mesh.cpp
+    ${SAPLING_SRC}/Renderer/Material.cpp
+    ${SAPLING_SRC}/Renderer/Forward3DPass.cpp
+    ${SAPLING_SRC}/Renderer/Quad2DPass.cpp
+    ${SAPLING_SRC}/Renderer/Skeleton.cpp
+    ${SAPLING_SRC}/Renderer/Animation.cpp
     ${SAPLING_SRC}/Utility/Physics.cpp
+
+    ${THIRD_PARTY}/ufbx/ufbx.c
 )
 
-# ── macOS: Objective-C++ Metal backend ────────────────
+# macOS only objective c metal backend
 if(APPLE)
     list(APPEND SAPLING_SOURCES ${SAPLING_SRC}/Renderer/SproutMetal.mm)
 endif()
 
-# ── Include directories ──────────────────────────────
-# include/          — engine headers (Core/, ECS/, Renderer/, Utility/)
-# third_party/      — glm/, sokol/ resolve here
-# third_party/stb/  — stb_truetype.h etc (Font.hpp uses <stb/stb_truetype.h>)
-# fmod inc dirs     — fmod.hpp, fmod_studio.hpp resolve here
+# editor (optional)
+option(SAPLING_EDITOR "Build with prefab editor (requires Dear ImGui)" OFF)
+
+if(SAPLING_EDITOR)
+    list(APPEND SAPLING_SOURCES
+
+        ${THIRD_PARTY}/imgui/imgui.cpp
+        ${THIRD_PARTY}/imgui/imgui_draw.cpp
+        ${THIRD_PARTY}/imgui/imgui_widgets.cpp
+        ${THIRD_PARTY}/imgui/imgui_tables.cpp
+
+        ${SAPLING_SRC}/Editor/ImGuiContext.cpp
+        ${SAPLING_SRC}/Editor/PrefabEditor.cpp
+        ${SAPLING_SRC}/Editor/ComponentInspector.cpp
+    )
+endif()
+
+# engine inc files
 set(SAPLING_INCLUDE_DIRS
     ${SAPLING_INCLUDE}
+
     ${THIRD_PARTY}
     ${THIRD_PARTY}/stb
+    ${THIRD_PARTY}/ufbx
+
     ${FMOD_CORE_INC}
     ${FMOD_STUDIO_INC}
 )
 
-# ── Link libraries ────────────────────────────────────
+if(SAPLING_EDITOR)
+    list(APPEND SAPLING_INCLUDE_DIRS ${THIRD_PARTY}/imgui)
+endif()
+
+# compile defs
+set(SAPLING_COMPILE_DEFS)
+if(APPLE OR WIN32)
+    list(APPEND SAPLING_COMPILE_DEFS GLM_FORCE_DEPTH_ZERO_TO_ONE)
+endif()
+
+if(SAPLING_EDITOR)
+    list(APPEND SAPLING_COMPILE_DEFS SAPLING_HAS_EDITOR)
+endif()
+
+# link external libs
 set(SAPLING_LINK_LIBS)
 if(APPLE)
     list(APPEND SAPLING_LINK_LIBS

@@ -4,15 +4,16 @@
 //
 
 #include "Core/Input.hpp"
+#include "Core/Logger.hpp"
 #include "Renderer/Sprout.hpp"
 
 #include <stdexcept>
 
 Input* Input::Instance = nullptr;
 
-InputAxis::InputAxis(std::string  name, const int pKey, const int nKey) 
-    :   name(std::move(name)), 
-        postiveKey(pKey), 
+InputAxis::InputAxis(std::string  name, const int pKey, const int nKey)
+    :   name(std::move(name)),
+        postiveKey(pKey),
         negativeKey(nKey)
     {}
 
@@ -23,9 +24,9 @@ Input::Input()
     m_actionsMap = std::map<std::string, std::vector<int>>();
     m_axisMap = std::map<std::string, std::shared_ptr<InputAxis>>();
     m_keyMap = std::map<int, std::shared_ptr<Key>>();
-    
+
     m_mousePosition = glm::vec2(0, 0);
-    
+
     m_mouseKeys = std::array<Key, static_cast<size_t>(MouseButton::COUNT)>();
 }
 
@@ -37,6 +38,8 @@ Input::~Input()
 void Input::initialize()
 {
     if (!Instance) Instance = new Input();
+
+    Logger::info("Input init completed");
 }
 
 void Input::cleanUp()
@@ -55,7 +58,7 @@ void Input::clean()
         key->justPressed = false;
         key->justReleased = false;
     }
-    
+
     for (auto& key : Instance->m_mouseKeys)
     {
         key.justPressed = false;
@@ -65,37 +68,37 @@ void Input::clean()
 
 void Input::update(const sapp_event * event)
 {
-    
-    Instance->m_mousePosition = glm::vec2(event->mouse_x, event->mouse_y);    
-    
-    if ((event->type == SAPP_EVENTTYPE_KEY_DOWN || event->type == SAPP_EVENTTYPE_KEY_UP) && !event->key_repeat) 
+
+    Instance->m_mousePosition = glm::vec2(event->mouse_x, event->mouse_y);
+
+    if ((event->type == SAPP_EVENTTYPE_KEY_DOWN || event->type == SAPP_EVENTTYPE_KEY_UP) && !event->key_repeat)
     {
         // check if there is a key for this code in m_keyMap
         if (Instance->m_keyMap.count(event->key_code) == 0) return;
 
         const std::shared_ptr<Key> key = Instance->m_keyMap[event->key_code];
-        
+
         if (event->type == SAPP_EVENTTYPE_KEY_DOWN)
         {
             key->justPressed = true;
             key->pressed = true;
 
-        } 
-        else 
+        }
+        else
         {
             key->justReleased = true;
             key->pressed = false;
-            
+
         }
 
     }
-    else if (event->type == SAPP_EVENTTYPE_MOUSE_DOWN) 
+    else if (event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
     {
         if (event->mouse_button >= Instance->m_mouseKeys.size()) return;
         Instance->m_mouseKeys[event->mouse_button].justPressed = true;
         Instance->m_mouseKeys[event->mouse_button].pressed = true;
     }
-    else if (event->type == SAPP_EVENTTYPE_MOUSE_UP) 
+    else if (event->type == SAPP_EVENTTYPE_MOUSE_UP)
     {
         if (event->mouse_button >= Instance->m_mouseKeys.size()) return;
         Instance->m_mouseKeys[event->mouse_button].justReleased = true;
@@ -133,7 +136,7 @@ void Input::makeAction(const std::string& name, const std::vector<int>& keycodes
     /*
      TODO: return if an action with the given name already exists
      */
-    
+
     Instance->m_actionsMap.insert({name, keycodes});
     for (const auto& k : keycodes)
     {
@@ -180,9 +183,9 @@ void Input::makeAxis(const std::string& name, const int positiveKey, const int n
      TODO: allow multiple keys to provide positive/negative key input
      TODO: return if an axis with the given name already exists
      */
-    
+
     Instance->m_axisMap.insert({name, std::make_shared<InputAxis>(name, positiveKey, negativeKey)});
-    
+
     // check if the keys are registered already, if not, add them to m_keyMap
     if (Instance->m_keyMap.count(positiveKey) == 0)
     {
@@ -243,4 +246,3 @@ auto Input::getMouseWorldPosition() -> glm::vec2
 {
     return Sprout::Window::screenToWorld(Instance->m_mousePosition);
 }
-

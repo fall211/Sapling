@@ -6,7 +6,9 @@
 
 #include "Core/Engine.hpp"
 #include "Core/AssetManager.hpp"
+#include "Core/PrefabLoader.hpp"
 #include "Core/SceneMessage.hpp"
+#include "Core/Logger.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -17,27 +19,28 @@ Engine::Engine(size_t viewportWidth, size_t viewportHeight, const char* title)
 {
     m_scenes = sceneMap();
     AssetManager::getInstance();
+    PrefabLoader::getInstance().initialize();
 
-    Debug::log("init completed");
+    Logger::info("Engine init completed");
 }
 
 void Engine::run()
 {
     m_window.SetUpdateFrameCallback([this](double dt) { this -> update(dt);});
-    
+
     m_window.Run(); // nothing after this gets called
 }
 
 void Engine::update(double dt)
 {
     m_deltaTime = dt;
-    
+
     if (!m_currentScene)
     {
-        Debug::log("ERR: No scene set");
+        Logger::error("No scene set");
         return;
     }
-    
+
     m_currentScene->preUpdate();
     m_currentScene->update();
     m_currentScene->postUpdate();
@@ -52,7 +55,7 @@ void Engine::makeScene(const std::string& name, std::shared_ptr<Scene> ptr)
     }
     else
     {
-        Debug::log("scene already exists");
+        Logger::warn("Scene already exists: " + name);
     }
 }
 
@@ -76,7 +79,7 @@ auto Engine::getCurrentScene() -> std::shared_ptr<Scene>&
     return m_currentScene;
 }
 
-#include "Core/EngineTemplates.hpp"
+#include "Core/EngineT.hpp"
 template bool Engine::sendToScene<int>(const std::string&, const std::string&, const int&);
 template bool Engine::sendToScene<float>(const std::string&, const std::string&, const float&);
 template bool Engine::sendToScene<std::string>(const std::string&, const std::string&, const std::string&);
@@ -86,4 +89,3 @@ template bool Engine::sendToCurrentScene<int>(const std::string&, const int&);
 template bool Engine::sendToCurrentScene<float>(const std::string&, const float&);
 template bool Engine::sendToCurrentScene<std::string>(const std::string&, const std::string&);
 template bool Engine::sendToCurrentScene<bool>(const std::string&, const bool&);
-

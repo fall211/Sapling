@@ -36,36 +36,50 @@ typedef std::vector<std::shared_ptr<Entity>> EntityList;
 class Scene
 {
     protected:
-        std::shared_ptr<EntityManager> m_entityManager; // the scene's entity manager
-        Engine& m_engine; // the engine that the scene is running on
-    
-    
+        std::shared_ptr<EntityManager> m_entityManager;
+        Engine& m_engine;
+
+
     public:
         explicit Scene(Engine& engine);
         virtual ~Scene()= default;
-        
+
         /*
             * Called when the scene is first created.
             * Override this function to initialize the scene
         */
         virtual void init() = 0;
-        
+
         /*
             * Called every frame.
             * Override this function to update the scene
         */
         virtual void update() = 0;
-        
+
         /*
             * Called every frame to render entities
             * Override this function to implement custom rendering, by default it renders all entities with a sprite component (static and animated)
             * @param entities The list of entities to render
         */
         virtual void sRender(EntityList& entities);
-        
+
+        /*
+            * Called every frame to render 3D entities
+            * Override this function to implement custom 3D rendering
+            * By default it finds the active camera, collects lights, and submits mesh draw requests
+            * @param entities The list of entities to render
+        */
+        virtual void sRender3D(EntityList& entities);
+
+        /*
+            * Unified render: calls sRender3D then sRender on all entities.
+            * Override for custom render ordering.
+        */
+        virtual void render();
+
         virtual void onSceneEnabled();
         virtual void onSceneDisabled();
-        
+
         /*
             * Processes a message sent from the Engine
             * Override this function to handle custom messages
@@ -73,28 +87,32 @@ class Scene
             * @return True if the message was handled, false otherwise
         */
         virtual bool onMessage(const SceneMessage& /*message*/) { return false; }
-        
+
         /*
             * Called when the scene is switched to
         */
         void enable();
-        
+
         /*
             * Called when the scene is switched from
         */
         void disable();
-        
+
+        /*
+            * Updates all animation state (2D sprite frames, color overrides, 3D skeletal animation).
+            * Called automatically from preUpdate(). Can also be called manually.
+        */
+        void sUpdateAnimations(EntityList& entities);
+
         /*
             * Called before each update loop, reserved for updates that are necessary for all scenes
         */
         void preUpdate();
-        
+
         /*
             * Called after each update loop, reserved for updates that are necessary for all scenes
         */
         void postUpdate();
-        
-        
+
+
 };
-
-

@@ -1,0 +1,18 @@
+{
+    "textures": {
+        "particle": { "path": "Sprites/particle.png" }
+    },
+    "fonts": {
+        "ui_font": { "path": "Fonts/game_font.ttf", "size": 63 }
+    },
+    "skeletons": {
+        "male_skeleton": { "path": "Models/male/Standard Walk.fbx" }
+    },
+    "animationClips": {
+        "walk": { "path": "Models/male/Standard Walk.fbx", "skeleton": "male_skeleton" },
+        "kneel": { "path": "Models/male/Kneeling Idle.fbx", "skeleton": "male_skeleton" }
+    },
+    "skinnedMeshes": {
+        "male_mesh": { "path": "Models/male/Standard Walk.fbx", "skeleton": "male_skeleton" }
+    }
+}

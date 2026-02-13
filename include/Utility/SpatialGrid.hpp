@@ -90,7 +90,7 @@ public:
             }
             
             // insert into new cell
-            auto newCells = getOverlappingCells(transform.position, {1,1});
+            auto newCells = getOverlappingCells(glm::vec2(transform.position), {1,1});
             entityCells[entityId] = newCells;
             
             for (int idx : newCells) {
@@ -120,7 +120,7 @@ public:
         
         // insert into new cells
         glm::vec2 size(bbox.w * abs(transform.scale.x), bbox.h * abs(transform.scale.y));
-        auto newCells = getOverlappingCells(transform.position, size);
+        auto newCells = getOverlappingCells(glm::vec2(transform.position), size);
         entityCells[entityId] = newCells;
         
         for (int idx : newCells) {
@@ -137,7 +137,7 @@ public:
 
         if (!entity->hasComponent<Comp::BBox>()) {
 
-            auto indices = getOverlappingCells(transform.position, {1,1});
+            auto indices = getOverlappingCells(glm::vec2(transform.position), {1,1});
             
             for (int idx : indices) {
                 auto it = cells.find(idx);
@@ -153,7 +153,7 @@ public:
         const auto& bbox = entity->getComponent<Comp::BBox>();
         
         glm::vec2 size(bbox.w * abs(transform.scale.x), bbox.h * abs(transform.scale.y));
-        auto indices = getOverlappingCells(transform.position, size);
+        auto indices = getOverlappingCells(glm::vec2(transform.position), size);
         
         for (int idx : indices) {
             auto it = cells.find(idx);
@@ -176,7 +176,7 @@ public:
         const auto& bbox = entity->getComponent<Comp::BBox>();
         
         glm::vec2 size(bbox.w * abs(transform.scale.x), bbox.h * abs(transform.scale.y));
-        auto indices = getOverlappingCells(transform.position, size);
+        auto indices = getOverlappingCells(glm::vec2(transform.position), size);
         
         std::unordered_map<size_t, std::shared_ptr<Entity>> uniqueEntities;
         uniqueEntities.reserve(16);

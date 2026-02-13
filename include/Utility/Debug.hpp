@@ -7,23 +7,23 @@
 
 #include "Renderer/Sprout.hpp"
 #include "Core/AssetManager.hpp"
+#include "Core/Logger.hpp"
 
-#include <iostream>
+#include <sstream>
 
 class Debug {
     public:
     
         /*
-            * Logs a message to the console
+            * Logs a message to the console via Logger.
             * @param message The message to print.
         */
         template<typename T>
         static void log(const T& message) 
         {
-            #ifndef DEBUG
-            return;
-            #endif
-            std::cout << message << std::endl;
+            std::ostringstream oss;
+            oss << message;
+            Logger::debug(oss.str());
         }
         static void draw_pos(glm::vec2 pos, glm::vec4 color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f))
         {

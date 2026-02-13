@@ -7,7 +7,9 @@
 CLAUDE.md
 
 # Compiled & Build
+build/
 Build/
+*/build/
 *.com
 *.class
 *.exe
