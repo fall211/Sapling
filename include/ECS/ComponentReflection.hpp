@@ -46,18 +46,29 @@ struct FieldInfo {
     const char* jsonKey;
     const char* displayName;
     FieldType type;
-    size_t offset;
+    void* (*getMutablePtr)(Component&);
+    const void* (*getConstPtr)(const Component&);
 
     template<typename T>
     T& get(Component& comp) const {
-        return *reinterpret_cast<T*>(reinterpret_cast<char*>(&comp) + offset);
+        return *static_cast<T*>(getMutablePtr(comp));
     }
 
     template<typename T>
     const T& getConst(const Component& comp) const {
-        return *reinterpret_cast<const T*>(reinterpret_cast<const char*>(&comp) + offset);
+        return *static_cast<const T*>(getConstPtr(comp));
     }
 };
+
+template<typename C, typename T, T C::*Member>
+inline void* fieldMutablePtr(Component& comp) {
+    return &(static_cast<C&>(comp).*Member);
+}
+
+template<typename C, typename T, T C::*Member>
+inline const void* fieldConstPtr(const Component& comp) {
+    return &(static_cast<const C&>(comp).*Member);
+}
 
 template<typename T> struct FieldTypeTag;
 
@@ -96,10 +107,22 @@ constexpr FieldType deduceFieldType() { return FieldTypeTag<T>::value; }
     }
 
 #define FIELD(member, jsonKey, display) \
-    Comp::FieldInfo{ jsonKey, display, Comp::deduceFieldType<std::remove_cvref_t<decltype(Self::member)>>(), offsetof(Self, member) }
+    Comp::FieldInfo{ \
+        jsonKey, \
+        display, \
+        Comp::deduceFieldType<std::remove_cvref_t<decltype(Self::member)>>(), \
+        &Comp::fieldMutablePtr<Self, std::remove_cvref_t<decltype(Self::member)>, &Self::member>, \
+        &Comp::fieldConstPtr<Self, std::remove_cvref_t<decltype(Self::member)>, &Self::member> \
+    }
 
 #define FIELD_AS(member, jsonKey, display, fieldType) \
-    Comp::FieldInfo{ jsonKey, display, fieldType, offsetof(Self, member) }
+    Comp::FieldInfo{ \
+        jsonKey, \
+        display, \
+        fieldType, \
+        &Comp::fieldMutablePtr<Self, std::remove_cvref_t<decltype(Self::member)>, &Self::member>, \
+        &Comp::fieldConstPtr<Self, std::remove_cvref_t<decltype(Self::member)>, &Self::member> \
+    }
 
 #define REGISTER_COMPONENT(CompType, compName) \
     const char* componentName() const override { return compName; } \
