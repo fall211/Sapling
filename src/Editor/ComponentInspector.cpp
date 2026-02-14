@@ -734,7 +734,37 @@ bool Comp::MeshRenderer::inspect()
             ImGui::LabelText("Asset Name##mat_diffname", "%s", diffuseName.c_str());
         ImGui::Unindent();
 
+        const char* shaderItems[] = {"Auto", "Mesh3D"};
+        int shaderIdx = 0;
+        if (shaderOverride == Sprout::ShaderType::Mesh3D) shaderIdx = 1;
+        if (ImGui::Combo("Shader Override##mr", &shaderIdx, shaderItems, 2))
+        {
+            if (shaderIdx == 1) shaderOverride = Sprout::ShaderType::Mesh3D;
+            else shaderOverride = Sprout::ShaderType::Custom;
+            modified = true;
+        }
+
         modified |= ImGui::Checkbox("Cast Shadow##mr", &castShadow);
+        modified |= ImGui::Checkbox("Receive Shadow##mr", &receiveShadow);
+        modified |= ImGui::Checkbox("Depth Test##mr", &depthTest);
+        modified |= ImGui::Checkbox("Depth Write##mr", &depthWrite);
+        modified |= ImGui::Checkbox("Double Sided##mr", &doubleSided);
+
+        int blendIdx = static_cast<int>(blendMode);
+        const char* blendItems[] = {"Alpha", "Opaque"};
+        if (ImGui::Combo("Blend Mode##mr", &blendIdx, blendItems, 2))
+        {
+            blendMode = static_cast<uint8_t>(blendIdx);
+            modified = true;
+        }
+
+        int renderLayerValue = static_cast<int>(renderLayer);
+        if (ImGui::InputInt("Render Layer##mr", &renderLayerValue))
+        {
+            if (renderLayerValue < 0) renderLayerValue = 0;
+            renderLayer = static_cast<size_t>(renderLayerValue);
+            modified = true;
+        }
     }
     return modified;
 }

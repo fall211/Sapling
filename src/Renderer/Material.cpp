@@ -6,7 +6,6 @@
 #include "Renderer/Material.hpp"
 #include "Renderer/Mesh.hpp"
 #include "Renderer/mesh3d.h"
-#include "Renderer/mesh3d_skinned.h"
 
 #include "Core/AssetManager.hpp"
 #include "Core/Logger.hpp"
@@ -71,7 +70,7 @@ auto Material::loadFromFile(const std::string& path) -> bool
     // shader type
     std::string shaderStr = j.value("shader", "Mesh3D");
     ShaderType type = ShaderType::Mesh3D;
-    if (shaderStr == "Mesh3DSkinned") type = ShaderType::Mesh3DSkinned;
+    if (shaderStr == "Mesh3DSkinned") type = ShaderType::Mesh3D;
 
     // base color
     if (j.contains("baseColor") && j["baseColor"].is_array()) {
@@ -110,7 +109,6 @@ auto Material::saveToFile(const std::string& path) const -> bool
 
     switch (m_shaderType) {
         case ShaderType::Mesh3D: j["shader"] = "Mesh3D"; break;
-        case ShaderType::Mesh3DSkinned: j["shader"] = "Mesh3DSkinned"; break;
         case ShaderType::Custom: j["shader"] = "Custom"; break;
     }
 
@@ -183,44 +181,6 @@ auto Material::ensureLoaded() -> bool
             pip_desc.colors[0].blend = blend;
 
             pip_desc.label = "mesh3d-pipeline";
-            m_pipeline = sg_make_pipeline(&pip_desc);
-            break;
-        }
-        case ShaderType::Mesh3DSkinned: {
-            m_shader = sg_make_shader(mesh3d_skinned_shader_desc(sg_query_backend()));
-
-            sg_pipeline_desc pip_desc = {};
-            pip_desc.shader = m_shader;
-            pip_desc.index_type = SG_INDEXTYPE_UINT32;
-
-            // skinned layout: vec3 position, vec3 normal, vec2 texcoord, vec4 tangent, vec4 boneIndices, vec4 boneWeights
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_position0].format = SG_VERTEXFORMAT_FLOAT3;
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_normal0].format = SG_VERTEXFORMAT_FLOAT3;
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_texcoord0].format = SG_VERTEXFORMAT_FLOAT2;
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_tangent0].format = SG_VERTEXFORMAT_FLOAT4;
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_bone_indices0].format = SG_VERTEXFORMAT_FLOAT4;
-            pip_desc.layout.attrs[ATTR_mesh3d_skinned_bone_weights0].format = SG_VERTEXFORMAT_FLOAT4;
-
-            // depth test
-            pip_desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL;
-            pip_desc.depth.write_enabled = true;
-
-            // backface culling
-            pip_desc.face_winding = SG_FACEWINDING_CCW;
-            pip_desc.cull_mode = SG_CULLMODE_BACK;
-
-            // alpha blending
-            sg_blend_state blend = {};
-            blend.enabled = true;
-            blend.src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA;
-            blend.dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-            blend.op_rgb = SG_BLENDOP_ADD;
-            blend.src_factor_alpha = SG_BLENDFACTOR_ONE;
-            blend.dst_factor_alpha = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-            blend.op_alpha = SG_BLENDOP_ADD;
-            pip_desc.colors[0].blend = blend;
-
-            pip_desc.label = "mesh3d-skinned-pipeline";
             m_pipeline = sg_make_pipeline(&pip_desc);
             break;
         }

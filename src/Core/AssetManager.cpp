@@ -14,6 +14,14 @@
 #include <iostream>
 #include <string>
 
+namespace
+{
+auto normalizeAssetPath(const std::string& path) -> std::string
+{
+    return std::filesystem::path(path).lexically_normal().generic_string();
+}
+}
+
 AssetManager* AssetManager::Instance = nullptr;
 std::string AssetManager::s_runtimeAssetsPath = "";
 
@@ -255,23 +263,38 @@ auto AssetManager::getImageTexture(const std::string& name) -> std::shared_ptr<S
 
 void AssetManager::addMesh(const std::string& name, const std::string& filepath)
 {
+    std::string normalizedPath = normalizeAssetPath(filepath);
+
+    for (const auto& [existingName, existingPath] : Instance->m_meshPaths) {
+        if (normalizeAssetPath(existingPath) != normalizedPath) continue;
+
+        auto existingMeshIt = Instance->m_meshes.find(existingName);
+        if (existingMeshIt == Instance->m_meshes.end()) continue;
+
+        auto mesh = existingMeshIt->second;
+        Instance->m_meshes[name] = mesh;
+        Instance->m_meshReverse[mesh.get()] = name;
+        Instance->m_meshPaths[name] = normalizedPath;
+        return;
+    }
+
     auto mesh = std::make_shared<Sprout::Mesh>();
-    std::string full_path = getAssetsPath() + filepath;
-    std::string ext = std::filesystem::path(filepath).extension().string();
+    std::string full_path = getAssetsPath() + normalizedPath;
+    std::string ext = std::filesystem::path(normalizedPath).extension().string();
     for (auto& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
     bool ok = false;
     if (ext == ".fbx") {
-        ok = mesh->loadFBX(filepath);
+        ok = mesh->loadFBX(normalizedPath);
     } else {
-        ok = mesh->loadOBJ(filepath);
+        ok = mesh->loadOBJ(normalizedPath);
     }
     if (!ok) {
         throw std::runtime_error("Error loading mesh file: " + full_path);
     }
     Instance->m_meshes[name] = mesh;
     Instance->m_meshReverse[mesh.get()] = name;
-    Instance->m_meshPaths[name] = filepath;
+    Instance->m_meshPaths[name] = normalizedPath;
 }
 
 
@@ -411,13 +434,29 @@ auto AssetManager::getAnimationClip(const std::string& name) -> std::shared_ptr<
 void AssetManager::addSkinnedMesh(const std::string& name, const std::string& filepath,
                                   const std::string& skeletonName)
 {
+    std::string normalizedPath = normalizeAssetPath(filepath);
+
+    for (const auto& [existingName, existingPath] : Instance->m_meshPaths) {
+        if (normalizeAssetPath(existingPath) != normalizedPath) continue;
+
+        auto existingMeshIt = Instance->m_meshes.find(existingName);
+        if (existingMeshIt == Instance->m_meshes.end()) continue;
+
+        auto mesh = existingMeshIt->second;
+        Instance->m_meshes[name] = mesh;
+        Instance->m_meshReverse[mesh.get()] = name;
+        Instance->m_meshPaths[name] = normalizedPath;
+        return;
+    }
+
     auto skeleton = getSkeleton(skeletonName);
     auto mesh = std::make_shared<Sprout::Mesh>();
-    if (!mesh->loadFBX(filepath, skeleton.get())) {
-        throw std::runtime_error("Error loading skinned mesh: " + filepath);
+    if (!mesh->loadFBX(normalizedPath, skeleton.get())) {
+        throw std::runtime_error("Error loading skinned mesh: " + normalizedPath);
     }
     Instance->m_meshes[name] = mesh;
     Instance->m_meshReverse[mesh.get()] = name;
+    Instance->m_meshPaths[name] = normalizedPath;
 }
 
 auto AssetManager::getMeshNames() -> std::vector<std::string> {

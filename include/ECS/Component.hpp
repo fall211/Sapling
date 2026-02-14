@@ -294,7 +294,14 @@ namespace Comp
     {
         std::shared_ptr<Sprout::Mesh> mesh;
         std::shared_ptr<Sprout::Material> material;
+        Sprout::ShaderType shaderOverride = Sprout::ShaderType::Custom;
         bool castShadow = true;
+        bool receiveShadow = true;
+        size_t renderLayer = 0xFFFFFFFFu;
+        bool depthTest = true;
+        bool depthWrite = true;
+        bool doubleSided = false;
+        uint8_t blendMode = 0; // 0=alpha, 1=opaque
 
         MeshRenderer(Inst inst);
         MeshRenderer(Inst inst, const std::shared_ptr<Sprout::Mesh>& meshIn,
@@ -309,7 +316,14 @@ namespace Comp
         SAPLING_FIELDS(MeshRenderer,
             FIELD(mesh, "mesh", "Mesh"),
             FIELD(material, "material", "Material"),
+            FIELD(shaderOverride, "shaderOverride", "Shader Override"),
             FIELD(castShadow, "castShadow", "Cast Shadow"),
+            FIELD(receiveShadow, "receiveShadow", "Receive Shadow"),
+            FIELD(renderLayer, "renderLayer", "Render Layer"),
+            FIELD(depthTest, "depthTest", "Depth Test"),
+            FIELD(depthWrite, "depthWrite", "Depth Write"),
+            FIELD(doubleSided, "doubleSided", "Double Sided"),
+            FIELD(blendMode, "blendMode", "Blend Mode"),
         )
     };
 

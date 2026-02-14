@@ -281,6 +281,7 @@ void Scene::sRender3D(EntityList& entities)
             }
 
             auto& meshRenderer = e->getComponent<Comp::MeshRenderer>();
+            if (!meshRenderer.mesh) continue;
 
             bool isSkinned = false;
             const std::vector<glm::mat4>* boneMatrices = nullptr;
@@ -294,8 +295,40 @@ void Scene::sRender3D(EntityList& entities)
                 }
             }
 
+            Sprout::ShaderType shaderType = meshRenderer.shaderOverride;
+            if (shaderType == Sprout::ShaderType::Custom)
+            {
+                shaderType = Sprout::ShaderType::Mesh3D;
+            }
+
+            if (!meshRenderer.material)
+            {
+                const std::string defaultMatName =
+                    "__default_mesh3d";
+
+                if (AssetManager::hasMaterial(defaultMatName))
+                {
+                    meshRenderer.material = AssetManager::getMaterial(defaultMatName);
+                }
+                else
+                {
+                    auto defaultMaterial = std::make_shared<Sprout::Material>();
+                    defaultMaterial->create(shaderType);
+                    AssetManager::addMaterial(defaultMatName, defaultMaterial);
+                    meshRenderer.material = defaultMaterial;
+                }
+            }
+
+            Sprout::PipelineState3D pipelineState;
+            pipelineState.depthTest = meshRenderer.depthTest;
+            pipelineState.depthWrite = meshRenderer.depthWrite;
+            pipelineState.doubleSided = meshRenderer.doubleSided;
+            pipelineState.blendMode = (meshRenderer.blendMode == 1)
+                ? Sprout::BlendMode3D::Opaque
+                : Sprout::BlendMode3D::Alpha;
+
             pass.submit(meshRenderer.mesh, meshRenderer.material, transform.getModelMatrix(),
-                       isSkinned, boneMatrices);
+                        pipelineState, isSkinned, boneMatrices);
         }
     }
 }

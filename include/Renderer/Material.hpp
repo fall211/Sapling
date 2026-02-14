@@ -17,7 +17,6 @@ namespace Sprout
     enum class ShaderType
     {
         Mesh3D,
-        Mesh3DSkinned,
         Custom
     };
 

@@ -15,7 +15,7 @@
                     0.6000000238418579,
                     1.0
                 ],
-                "shaderType": "Mesh3DSkinned",
+                "shaderType": "Mesh3D",
                 "specularStrength": 0.0
             },
             "mesh": "male_mesh"

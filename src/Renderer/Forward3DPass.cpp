@@ -53,15 +53,88 @@ void Forward3DPass::ensureResources()
 void Forward3DPass::submit(const std::shared_ptr<Mesh>& mesh,
                            const std::shared_ptr<Material>& material,
                            const glm::mat4& modelMatrix,
+                           const PipelineState3D& pipelineState,
                            bool isSkinned,
                            const std::vector<glm::mat4>* boneMatrices)
 {
-    m_drawRequests.push_back({mesh, material, modelMatrix, isSkinned, boneMatrices});
+    m_drawRequests.push_back({mesh, material, modelMatrix, pipelineState, isSkinned, boneMatrices});
 }
 
 void Forward3DPass::clear()
 {
     m_drawRequests.clear();
+}
+
+auto Forward3DPass::makePipelineVariant(bool isSkinned, const PipelineState3D& state) -> sg_pipeline
+{
+    sg_shader shader = {};
+    sg_pipeline_desc pip_desc = {};
+    pip_desc.index_type = SG_INDEXTYPE_UINT32;
+
+    if (isSkinned)
+    {
+        shader = sg_make_shader(mesh3d_skinned_shader_desc(sg_query_backend()));
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_position0].format = SG_VERTEXFORMAT_FLOAT3;
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_normal0].format = SG_VERTEXFORMAT_FLOAT3;
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_texcoord0].format = SG_VERTEXFORMAT_FLOAT2;
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_tangent0].format = SG_VERTEXFORMAT_FLOAT4;
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_bone_indices0].format = SG_VERTEXFORMAT_FLOAT4;
+        pip_desc.layout.attrs[ATTR_mesh3d_skinned_bone_weights0].format = SG_VERTEXFORMAT_FLOAT4;
+    }
+    else
+    {
+        shader = sg_make_shader(mesh3d_shader_desc(sg_query_backend()));
+        pip_desc.layout.attrs[ATTR_mesh3d_position0].format = SG_VERTEXFORMAT_FLOAT3;
+        pip_desc.layout.attrs[ATTR_mesh3d_normal0].format = SG_VERTEXFORMAT_FLOAT3;
+        pip_desc.layout.attrs[ATTR_mesh3d_texcoord0].format = SG_VERTEXFORMAT_FLOAT2;
+        pip_desc.layout.attrs[ATTR_mesh3d_tangent0].format = SG_VERTEXFORMAT_FLOAT4;
+    }
+
+    pip_desc.shader = shader;
+
+    pip_desc.depth.compare = state.depthTest ? SG_COMPAREFUNC_LESS_EQUAL : SG_COMPAREFUNC_ALWAYS;
+    pip_desc.depth.write_enabled = state.depthWrite;
+
+    pip_desc.face_winding = SG_FACEWINDING_CCW;
+    pip_desc.cull_mode = state.doubleSided ? SG_CULLMODE_NONE : SG_CULLMODE_BACK;
+
+    sg_blend_state blend = {};
+    blend.enabled = (state.blendMode == BlendMode3D::Alpha);
+    if (blend.enabled)
+    {
+        blend.src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA;
+        blend.dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend.op_rgb = SG_BLENDOP_ADD;
+        blend.src_factor_alpha = SG_BLENDFACTOR_ONE;
+        blend.dst_factor_alpha = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend.op_alpha = SG_BLENDOP_ADD;
+    }
+    pip_desc.colors[0].blend = blend;
+    pip_desc.label = "mesh3d-pipeline-variant";
+
+    return sg_make_pipeline(&pip_desc);
+}
+
+auto Forward3DPass::getPipelineForRequest(const MeshDrawRequest& request) -> sg_pipeline
+{
+    bool isSkinned = request.isSkinned;
+
+    // compact hash key from skinning + pipeline state flags
+    uint64_t key = (isSkinned ? 1ull : 0ull);
+    key |= (request.pipelineState.depthTest ? 1ull : 0ull) << 8;
+    key |= (request.pipelineState.depthWrite ? 1ull : 0ull) << 9;
+    key |= (request.pipelineState.doubleSided ? 1ull : 0ull) << 10;
+    key |= static_cast<uint64_t>(request.pipelineState.blendMode) << 11;
+
+    auto it = m_pipelineVariants.find(key);
+    if (it != m_pipelineVariants.end())
+    {
+        return it->second;
+    }
+
+    sg_pipeline pip = makePipelineVariant(isSkinned, request.pipelineState);
+    m_pipelineVariants.emplace(key, pip);
+    return pip;
 }
 
 void Forward3DPass::execute(Window& window)
@@ -70,10 +143,13 @@ void Forward3DPass::execute(Window& window)
 
     ensureResources();
 
-    // sort by material pipeline to minimize state changes
+    // sort by effective pipeline to minimize state changes
     std::sort(m_drawRequests.begin(), m_drawRequests.end(),
-        [](const MeshDrawRequest& a, const MeshDrawRequest& b) {
-            return a.material->getPipeline().id < b.material->getPipeline().id;
+        [this](const MeshDrawRequest& a, const MeshDrawRequest& b) {
+            if (!a.material || !b.material) {
+                return static_cast<int>(!!a.material) > static_cast<int>(!!b.material);
+            }
+            return getPipelineForRequest(a).id < getPipelineForRequest(b).id;
         });
 
     glm::mat4 viewProj = sceneData.projectionMatrix * sceneData.viewMatrix;
@@ -83,10 +159,12 @@ void Forward3DPass::execute(Window& window)
     for (const auto& request : m_drawRequests) {
         if (!request.mesh || !request.material) continue;
 
+        sg_pipeline pipeline = getPipelineForRequest(request);
+
         // switch pipeline if needed
-        if (request.material->getPipeline().id != currentPipelineId) {
-            sg_apply_pipeline(request.material->getPipeline());
-            currentPipelineId = request.material->getPipeline().id;
+        if (pipeline.id != currentPipelineId) {
+            sg_apply_pipeline(pipeline);
+            currentPipelineId = pipeline.id;
         }
 
         // bindings

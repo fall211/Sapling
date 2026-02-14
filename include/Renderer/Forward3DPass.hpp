@@ -13,16 +13,33 @@
 #include "sokol/sokol_gfx.h"
 
 #include <cmath>
+#include <cstdint>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace Sprout
 {
+    enum class BlendMode3D : std::uint8_t
+    {
+        Alpha = 0,
+        Opaque = 1
+    };
+
+    struct PipelineState3D
+    {
+        bool depthTest = true;
+        bool depthWrite = true;
+        bool doubleSided = false;
+        BlendMode3D blendMode = BlendMode3D::Alpha;
+    };
+
     struct MeshDrawRequest
     {
         std::shared_ptr<Mesh> mesh;
         std::shared_ptr<Material> material;
         glm::mat4 modelMatrix;
+        PipelineState3D pipelineState;
 
         bool isSkinned = false;
         const std::vector<glm::mat4>* boneMatrices = nullptr;
@@ -110,6 +127,7 @@ namespace Sprout
         void submit(const std::shared_ptr<Mesh>& mesh,
                     const std::shared_ptr<Material>& material,
                     const glm::mat4& modelMatrix,
+                    const PipelineState3D& pipelineState = {},
                     bool isSkinned = false,
                     const std::vector<glm::mat4>* boneMatrices = nullptr);
 
@@ -132,7 +150,10 @@ namespace Sprout
         sg_image m_midGrayTex = {};
         sg_sampler m_sampler = {};
         bool m_resourcesCreated = false;
+        std::unordered_map<uint64_t, sg_pipeline> m_pipelineVariants;
 
         void ensureResources();
+        auto getPipelineForRequest(const MeshDrawRequest& request) -> sg_pipeline;
+        auto makePipelineVariant(bool isSkinned, const PipelineState3D& state) -> sg_pipeline;
     };
 }

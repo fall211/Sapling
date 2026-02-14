@@ -1,7 +1,11 @@
 {
     "components": {
         "MeshRenderer": {
+            "blendMode": 0,
             "castShadow": true,
+            "depthTest": true,
+            "depthWrite": true,
+            "doubleSided": false,
             "material": {
                 "baseColor": [
                     1.0,
@@ -19,9 +23,13 @@
             "mesh": {
                 "name": "Ant",
                 "path": "Models/ant/Ant.obj"
-            }
+            },
+            "receiveShadow": true,
+            "renderLayer": 4294967295,
+            "shaderOverride": "Custom"
         },
-        "Transform3D": {
+        "Transform": {
+            "pivot": "TOP_LEFT",
             "position": [
                 0.0,
                 0.0,

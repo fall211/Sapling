@@ -62,7 +62,7 @@ namespace Comp
     {
         static const std::unordered_map<std::string, Sprout::ShaderType> map =
         {
-            {"Mesh3D", Sprout::ShaderType::Mesh3D}, {"Mesh3DSkinned", Sprout::ShaderType::Mesh3DSkinned},
+            {"Mesh3D", Sprout::ShaderType::Mesh3D}, {"Mesh3DSkinned", Sprout::ShaderType::Mesh3D},
             {"Custom", Sprout::ShaderType::Custom}
         };
         auto it = map.find(str);
@@ -115,7 +115,6 @@ namespace Comp
         switch (s)
         {
             case Sprout::ShaderType::Mesh3D: return "Mesh3D";
-            case Sprout::ShaderType::Mesh3DSkinned: return "Mesh3DSkinned";
             case Sprout::ShaderType::Custom: return "Custom";
             default: return "Mesh3D";
         }
@@ -518,29 +517,6 @@ namespace Comp
     REGISTER_COMPONENT_IMPL(BSphere, "BSphere")
     REGISTER_COMPONENT_IMPL(BBox3D, "BBox3D")
     REGISTER_COMPONENT_IMPL(Animator, "Animator")
-
-    // Backward-compatible factory aliases for removed component types
-    namespace {
-        static bool _aliasRegistered = [] {
-            PrefabLoader::getInstance().registerFactory("Transform3D",
-                [](const std::shared_ptr<Entity>& entity, const nlohmann::json& data) {
-                    auto& comp = entity->addComponent<Transform>();
-                    comp.deserialize(data);
-                });
-            PrefabLoader::getInstance().registerFactory("GUITransform",
-                [](const std::shared_ptr<Entity>& entity, const nlohmann::json& data) {
-                    auto& comp = entity->addComponent<Transform>();
-                    comp.screenSpace = true;
-                    comp.deserialize(data);
-                });
-            PrefabLoader::getInstance().registerFactory("TransformHierarchy",
-                [](const std::shared_ptr<Entity>& entity, const nlohmann::json& data) {
-                    if (!entity->hasComponent<Transform>())
-                        entity->addComponent<Transform>();
-                });
-            return true;
-        }();
-    }
 
     Transform::Transform(Inst inst) : Component(std::move(inst)) {}
 
