@@ -379,6 +379,9 @@ namespace Sprout
         desc.event_cb = event_cb;
         desc.high_dpi = true;
         desc.fullscreen = true;
+#ifdef SAPLING_HAS_EDITOR
+        desc.fullscreen = false;
+#endif
         desc.window_title = Instance->m_title;
         return desc;
     }

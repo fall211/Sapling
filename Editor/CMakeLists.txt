@@ -135,13 +135,37 @@ target_link_libraries(SaplingEditor PRIVATE SaplingEngine)
 target_include_directories(SaplingEditor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # ────────────────────────────────────────────────────────
+# MACOS BUNDLE CONFIGURATION
+# ────────────────────────────────────────────────────────
+if(APPLE)
+    set(ICON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Resources/SaplingEditor.icns")
+
+    set_target_properties(SaplingEditor PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_ICON_FILE SaplingEditor.icns
+        MACOSX_BUNDLE_BUNDLE_NAME "Sapling Editor"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.sapling.editor"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        RESOURCE "${ICON_FILE}"
+    )
+
+    # Copy icon into app bundle Resources
+    add_custom_command(TARGET SaplingEditor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_CONTENT_DIR:SaplingEditor>/Resources"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ICON_FILE}" "$<TARGET_BUNDLE_CONTENT_DIR:SaplingEditor>/Resources/"
+        COMMENT "Copying icon to app bundle"
+    )
+endif()
+
+# ────────────────────────────────────────────────────────
 # COPY FMOD DYLIBS
 # ────────────────────────────────────────────────────────
 if(APPLE)
     foreach(dylib ${SAPLING_FMOD_DYLIBS})
         add_custom_command(TARGET SaplingEditor POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dylib}" $<TARGET_FILE_DIR:SaplingEditor>
-            COMMENT "Copying ${dylib} to output"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dylib}" "$<TARGET_BUNDLE_CONTENT_DIR:SaplingEditor>/MacOS"
+            COMMENT "Copying ${dylib} to app bundle"
         )
     endforeach()
     set_target_properties(SaplingEditor PROPERTIES

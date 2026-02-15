@@ -10,4 +10,4 @@ cmake -B build/Debug -DCMAKE_BUILD_TYPE=Debug .
 
 cmake --build build/Debug
 
-./build/Debug/SaplingEditor "$ASSETS_PATH"
+./build/Debug/SaplingEditor.app/Contents/MacOS/SaplingEditor "$ASSETS_PATH"
