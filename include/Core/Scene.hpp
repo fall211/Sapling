@@ -81,7 +81,7 @@ class Scene
 
         /*
             * Unified render: sets up render state, then iterates all entities once
-            * to submit both 3D meshes and 2D sprites/text/images.
+            * to submit both 3D meshes and 2D sprites/text.
             * Override for custom render ordering.
         */
         virtual void render();

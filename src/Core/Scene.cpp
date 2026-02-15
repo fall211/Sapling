@@ -351,7 +351,6 @@ void Scene::render()
 
     for (const auto& e : entities)
     {
-        // GridTransform → Transform sync
         if (e->hasComponent<Comp::GridTransform>() && e->hasComponent<Comp::Transform>())
         {
             auto& gridTransform = e->getComponent<Comp::GridTransform>();
@@ -360,7 +359,6 @@ void Scene::render()
             transform.position = glm::vec3(worldPos, transform.position.z);
         }
 
-        // --- 3D: MeshRenderer submission ---
         if (e->hasComponentEnabled<Comp::MeshRenderer>() && e->hasComponent<Comp::Transform>())
         {
             auto& transform = e->getComponent<Comp::Transform>();
@@ -434,7 +432,6 @@ void Scene::render()
             }
         }
 
-        // --- 2D: Sprite ---
         if (e->hasComponentEnabled<Comp::Sprite>() && e->getComponent<Comp::Sprite>().texture)
         {
             auto& cSprite = e->getComponent<Comp::Sprite>();
@@ -488,7 +485,6 @@ void Scene::render()
             }
         }
 
-        // --- 2D: Text ---
         if (e->hasComponentEnabled<Comp::Text>())
         {
             auto& cText = e->getComponent<Comp::Text>();
