@@ -551,47 +551,12 @@ bool Comp::Sprite::inspect()
         modified |= ImGui::Checkbox("Flip X##spr", &flip_X);
         modified |= editVec2("Offset##spr", transformOffset);
         modified |= editVec3("Scale Offset##spr", scaleOffset, 0.01f);
+        modified |= ImGui::DragFloat("Pixels Per Unit##spr", &pixelsPerUnit, 0.1f, 0.1f, 1000.0f);
     }
     return modified;
 }
 
-bool Comp::Image::inspect()
-{
-    bool modified = false;
-    if (ImGui::CollapsingHeader("Image"))
-    {
-        std::string currentName;
-        if (texture) currentName = AssetManager::getImageTextureName(texture);
-        std::string currentPath = currentName.empty() ? "" : AssetManager::getImageTexturePath(currentName);
 
-        auto pick = assetFilePicker("Texture##img", currentPath, {".png", ".jpg", ".jpeg", ".bmp", ".tga"});
-        if (pick.changed)
-        {
-            if (pick.path.empty())
-            {
-                texture = nullptr;
-                modified = true;
-            }
-            else
-            {
-                try
-                {
-                    texture = AssetManager::ensureImageTexture(pick.assetName, pick.path);
-                    if (texture) size = glm::vec2(texture->getWidth(), texture->getHeight());
-                    modified = true;
-                }
-                catch (...) {}
-            }
-        }
-        if (!currentName.empty())
-            ImGui::LabelText("Asset Name##img", "%s", currentName.c_str());
-
-        modified |= editLayer("Layer##img", layer);
-        modified |= editVec2("Offset##img", transformOffset);
-        modified |= editVec3("Scale Offset##img", scaleOffset, 0.01f);
-    }
-    return modified;
-}
 
 bool Comp::Text::inspect()
 {

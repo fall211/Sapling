@@ -272,7 +272,7 @@ namespace Sprout
             glm::vec2 anchor_offset = getAnchorOffset(pivot);
             glm::vec2 pos = glm::vec2(position.x * anchor_offset.x * -1, position.y * anchor_offset.y * -1);
             if (anchor_offset.x == 0)       pos.x = position.x;
-            if (anchor_offset.y == 0)       pos.y = -position.y;
+            if (anchor_offset.y == 0)       pos.y = position.y;
 
             anchor_offset.x = anchor_offset.x * m_viewportWidth + pos.x;
             anchor_offset.y = anchor_offset.y * m_viewportHeight + pos.y;
@@ -405,7 +405,8 @@ namespace Sprout
         glm::f32 rotation,
         glm::vec3 scale,
         Pivot pivot,
-        glm::vec4 color_override)
+        glm::vec4 color_override,
+        bool worldSpace)
     {
         if (draw_frame.num_images >= MAX_IMAGES) {
             return; // no more space for standalone textures
@@ -413,8 +414,22 @@ namespace Sprout
 
         glm::mat4 xform0 = glm::mat4(1.0f);
 
-        // translate
-        xform0 = glm::translate(xform0, glm::vec3(position, 0.0f));
+        if (worldSpace)
+        {
+            xform0 = glm::translate(xform0, glm::vec3(position, 0.0f));
+        }
+        else
+        {
+            glm::vec2 anchor_offset = getAnchorOffset(pivot);
+            glm::vec2 pos = glm::vec2(position.x * anchor_offset.x * -1, position.y * anchor_offset.y * -1);
+            if (anchor_offset.x == 0)       pos.x = position.x;
+            if (anchor_offset.y == 0)       pos.y = position.y;
+
+            anchor_offset.x = anchor_offset.x * m_viewportWidth + pos.x;
+            anchor_offset.y = anchor_offset.y * m_viewportHeight + pos.y;
+
+            xform0 = glm::translate(xform0, glm::vec3(anchor_offset, 0.0f));
+        }
 
         // scale
         xform0 = glm::scale(xform0, scale);
@@ -441,7 +456,16 @@ namespace Sprout
             glm::vec2(1.0f, 0.0f)
         };
         std::array<glm::vec4, 4> color_overrides = {color_override, color_override, color_override, color_override};
-        glm::mat4 projection = draw_frame.view_projection * draw_frame.camera_xform * xform0;
+
+        glm::mat4 projection;
+        if (worldSpace)
+        {
+            projection = draw_frame.view_projection * draw_frame.camera_xform * xform0;
+        }
+        else
+        {
+            projection = draw_frame.view_projection * xform0;
+        }
 
         for (int i = 0; i < 4; i++)
         {
@@ -630,7 +654,7 @@ namespace Sprout
             glm::vec2 pos;
 
             pos.x = (anchor_offset.x != 0) ? -position.x * anchor_offset.x : position.x;
-            pos.y = (anchor_offset.y != 0) ? -position.y * anchor_offset.y : -position.y;
+            pos.y = (anchor_offset.y != 0) ? -position.y * anchor_offset.y : position.y;
 
             pos.x += anchor_offset.x * m_viewportWidth;
             pos.y += anchor_offset.y * m_viewportHeight;

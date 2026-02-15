@@ -509,7 +509,7 @@ namespace Comp
     REGISTER_COMPONENT_IMPL(BBox, "BBox")
     REGISTER_COMPONENT_IMPL(BCircle, "BCircle")
     REGISTER_COMPONENT_IMPL(Sprite, "Sprite")
-    REGISTER_COMPONENT_IMPL(Image, "Image")
+
     REGISTER_COMPONENT_IMPL(Text, "Text")
     REGISTER_COMPONENT_IMPL(MeshRenderer, "MeshRenderer")
     REGISTER_COMPONENT_IMPL(Camera, "Camera")
@@ -761,24 +761,7 @@ namespace Comp
         return j;
     }
 
-    Image::Image(Inst inst) : Component(std::move(inst)) {}
 
-    Image::Image(Inst inst, const std::shared_ptr<Sprout::Texture>& texin)
-        : Component(std::move(inst)), texture(texin)
-    {
-        glm::i32 x = texin->getWidth();
-        glm::i32 y = texin->getHeight();
-        size = glm::vec2(x, y);
-    }
-
-    void Image::OnAddToEntity() { inst->requestAddTag("drawable"); }
-    void Image::OnRemoveFromEntity() { inst->requestRemoveTag("drawable"); }
-
-    void Image::postDeserialize()
-    {
-        if (texture)
-            size = glm::vec2(texture->getWidth(), texture->getHeight());
-    }
 
     Text::Text(Inst inst) : Component(std::move(inst)) {}
 

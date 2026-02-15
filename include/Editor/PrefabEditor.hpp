@@ -22,6 +22,7 @@ public:
 
     void init() override;
     void update() override;
+    void setupRenderState(EntityList& entities) override;
     void onSceneEnabled() override;
     void onSceneDisabled() override;
 
@@ -61,6 +62,7 @@ private:
     std::shared_ptr<Sprout::Material> m_gridMaterial;
 
     glm::vec4 m_viewportRect = glm::vec4(0.0f);
+    float m_viewportAspect = 1.0f;
     bool m_viewportHovered = false;
 
     bool m_requestSaveAs = false;

@@ -232,7 +232,8 @@ namespace Sprout
                 glm::f32 rotation = 0.0f,
                 glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f),
                 Pivot pivot = Pivot::CENTER,
-                glm::vec4 color_override = Color::Transparent
+                glm::vec4 color_override = Color::Transparent,
+                bool worldSpace = true
             );
 
 

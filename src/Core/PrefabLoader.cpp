@@ -104,7 +104,6 @@ auto PrefabLoader::createEntityFromJson(const nlohmann::json& prefabJson,
     {
         if (entity->hasComponent<Comp::MeshRenderer>() ||
             entity->hasComponent<Comp::Sprite>() ||
-            entity->hasComponent<Comp::Image>() ||
             entity->hasComponent<Comp::Text>())
         {
             entity->addComponent<Comp::Transform>();

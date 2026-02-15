@@ -72,7 +72,16 @@ class Scene
         virtual void sRender3D(EntityList& entities);
 
         /*
-            * Unified render: calls sRender3D then sRender on all entities.
+            * Sets up 3D render state: finds active camera, computes projection/view matrices,
+            * extracts frustum, and collects lights. Override to customize camera/projection setup
+            * (e.g. editor viewport with different aspect ratio).
+            * @param entities The list of entities to search for camera and lights
+        */
+        virtual void setupRenderState(EntityList& entities);
+
+        /*
+            * Unified render: sets up render state, then iterates all entities once
+            * to submit both 3D meshes and 2D sprites/text/images.
             * Override for custom render ordering.
         */
         virtual void render();

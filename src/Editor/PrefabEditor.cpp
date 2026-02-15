@@ -136,10 +136,6 @@ void PrefabEditor::update()
             if (m_cameraEntity && m_cameraEntity->hasComponent<Comp::Transform>())
             {
                 glm::vec3 current_target(m_orbitXOffset, m_orbitYOffset, m_orbitZOffset);
-                if (m_previewEntity && m_previewEntity->hasComponent<Comp::Transform>())
-                {
-                    current_target += m_previewEntity->getComponent<Comp::Transform>().position;
-                }
                 auto& camT = m_cameraEntity->getComponent<Comp::Transform>();
                 glm::vec3 forward = glm::normalize(current_target - camT.position);
                 glm::vec3 world_up(0.0f, 1.0f, 0.0f);
@@ -170,10 +166,6 @@ void PrefabEditor::update()
     if (m_cameraEntity && m_cameraEntity->hasComponent<Comp::Transform>())
     {
         glm::vec3 orbitTarget(m_orbitXOffset, m_orbitYOffset, m_orbitZOffset);
-        if (m_previewEntity && m_previewEntity->hasComponent<Comp::Transform>())
-        {
-            orbitTarget += m_previewEntity->getComponent<Comp::Transform>().position;
-        }
 
         auto& camT = m_cameraEntity->getComponent<Comp::Transform>();
         float cx = m_orbitDistance * std::cos(m_orbitPitch) * std::sin(m_orbitYaw);
@@ -200,25 +192,33 @@ void PrefabEditor::update()
     window.draw_frame.view_projection = glm::ortho(0.0f, vpW, vpH, 0.0f, 1.0f, -1.0f);
     window.setCameraPosition(glm::vec2(-vpW * 0.5f, -vpH * 0.5f));
 
-    auto& pass = window.getForward3DPass();
-    pass.sceneData.ambientStrength = 0.4f;
+    m_viewportAspect = (vpW > 0 && vpH > 0) ? vpW / vpH : 1.0f;
 
-    auto& entities = m_entityManager->getEntities();
-    sRender3D(entities);
+    window.getForward3DPass().sceneData.ambientStrength = 0.4f;
 
+    render();
+}
+
+void PrefabEditor::setupRenderState(EntityList& entities)
+{
+    // call base to find camera, set view/projection, extract frustum, collect lights
+    Scene::setupRenderState(entities);
+
+    auto& pass = m_engine.getWindow().getForward3DPass();
+
+    // override projection with editor viewport aspect ratio (base uses full window aspect)
+    if (m_cameraEntity && m_cameraEntity->hasComponent<Comp::Camera>())
+    {
+        auto& cam = m_cameraEntity->getComponent<Comp::Camera>();
+        pass.sceneData.projectionMatrix = cam.getProjectionMatrix(m_viewportAspect);
+        pass.frustum.extract(pass.sceneData.projectionMatrix * pass.sceneData.viewMatrix);
+    }
+
+    // submit editor grid
     if (m_gridMesh && m_gridMaterial)
     {
         pass.submit(m_gridMesh, m_gridMaterial, glm::mat4(1.0f));
     }
-
-    if (vpW > 0 && vpH > 0 && m_cameraEntity && m_cameraEntity->hasComponent<Comp::Camera>())
-    {
-        float vpAspect = vpW / vpH;
-        auto& cam = m_cameraEntity->getComponent<Comp::Camera>();
-        pass.sceneData.projectionMatrix = cam.getProjectionMatrix(vpAspect);
-    }
-
-    sRender(entities);
 }
 
 void PrefabEditor::onSceneEnabled()

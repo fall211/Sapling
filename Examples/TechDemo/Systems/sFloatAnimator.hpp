@@ -31,11 +31,6 @@ namespace System
                 auto& sprite = e->getComponent<Comp::Sprite>();
                 sprite.transformOffset.y = offsetY;
             }
-            else if (e->hasComponent<Comp::Image>())
-            {
-                auto& image = e->getComponent<Comp::Image>();
-                image.transformOffset.y = offsetY;
-            }
         }
     }
 }

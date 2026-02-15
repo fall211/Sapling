@@ -181,6 +181,7 @@ namespace Comp
         glm::vec2 size;
         glm::vec2 transformOffset = glm::vec2(0.0f, 0.0f);
         glm::vec3 scaleOffset = glm::vec3(1.0f, 1.0f, 1.0f);
+        float pixelsPerUnit = 32.0f;
 
         enum class Type : std::uint8_t
         {
@@ -225,34 +226,7 @@ namespace Comp
             FIELD(flip_X, "flipX", "Flip X"),
             FIELD(transformOffset, "transformOffset", "Offset"),
             FIELD(scaleOffset, "scaleOffset", "Scale Offset"),
-        )
-    };
-
-    struct Image final : public Component
-    {
-        std::shared_ptr<Sprout::Texture> texture;
-        glm::vec2 size;
-        glm::vec2 transformOffset = glm::vec2(0.0f, 0.0f);
-        glm::vec3 scaleOffset = glm::vec3(1.0f, 1.0f, 1.0f);
-        Layer layer = Layer::Midground;
-
-        explicit Image(Inst inst);
-        explicit Image(Inst inst, const std::shared_ptr<Sprout::Texture>& texin);
-        void OnAddToEntity() override;
-        void OnRemoveFromEntity() override;
-        void setLayer(Layer newLayer) { layer = newLayer; }
-
-        void postDeserialize() override;
-#ifdef SAPLING_HAS_EDITOR
-        bool inspect() override;
-#endif
-
-        REGISTER_COMPONENT(Image, "Image")
-        SAPLING_FIELDS(Image,
-            FIELD_AS(texture, "texture", "Texture", FieldType::ImageTextureRef),
-            FIELD(layer, "layer", "Layer"),
-            FIELD(transformOffset, "transformOffset", "Offset"),
-            FIELD(scaleOffset, "scaleOffset", "Scale Offset"),
+            FIELD(pixelsPerUnit, "pixelsPerUnit", "Pixels Per Unit"),
         )
     };
 
