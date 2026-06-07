@@ -12,8 +12,6 @@
 #include <memory>
 #include <vector>
 
-#include <nlohmann/json_fwd.hpp>
-
 class Entity;
 
 typedef std::vector<std::shared_ptr<Entity>> EntityList;
@@ -125,20 +123,6 @@ class EntityManager : public std::enable_shared_from_this<EntityManager>
         */
         EntityList getEntitiesInRange(const std::string& tag, EntityList& entitiesInRange);
         
-        /*
-            * Loads a prefab from a JSON file and creates an entity.
-            * @param prefabPath Path to the prefab JSON file (relative to assets dir)
-            * @return The created entity
-        */
-        auto loadPrefab(const std::string& prefabPath) -> std::shared_ptr<Entity>;
-        
-        /*
-            * Loads a prefab with runtime overrides merged into the base JSON.
-            * @param prefabPath Path to the prefab JSON file
-            * @param overrides JSON with component field overrides
-            * @return The created entity
-        */
-        auto loadPrefab(const std::string& prefabPath, const nlohmann::json& overrides) -> std::shared_ptr<Entity>;
 };
 
 #include "EntityManagerT.hpp"

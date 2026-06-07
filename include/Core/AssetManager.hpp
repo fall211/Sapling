@@ -6,10 +6,6 @@
 #pragma once
 
 #include "Renderer/Texture.hpp"
-#include "Renderer/Mesh.hpp"
-#include "Renderer/Material.hpp"
-#include "Renderer/Skeleton.hpp"
-#include "Renderer/Animation.hpp"
 #include "Renderer/Font.hpp"
 
 #include "glm/glm.hpp"
@@ -21,6 +17,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <nlohmann/json_fwd.hpp>
+
 class AudioEngine;
 
 class AssetManager {
@@ -31,30 +29,18 @@ class AssetManager {
 
     std::unordered_map<std::string, FMOD::Sound*> m_sounds = std::unordered_map<std::string, FMOD::Sound*>();
 
-    std::unordered_map<std::string, std::shared_ptr<Sprout::Mesh>> m_meshes;
-    std::unordered_map<std::string, std::shared_ptr<Sprout::Material>> m_materials;
-    std::unordered_map<std::string, std::shared_ptr<Sprout::Skeleton>> m_skeletons;
-    std::unordered_map<std::string, std::shared_ptr<Sprout::AnimationClip>> m_animationClips;
-
     std::unordered_map<std::string, std::shared_ptr<Sprout::Texture>> m_imageTextures = std::unordered_map<std::string, std::shared_ptr<Sprout::Texture>>();
 
     std::unordered_map<std::string, std::string> m_texturePaths;
     std::unordered_map<std::string, std::string> m_imageTexturePaths;
-    std::unordered_map<std::string, std::string> m_meshPaths;
-    std::unordered_map<std::string, std::string> m_skeletonPaths;
-    std::unordered_map<std::string, std::string> m_animClipPaths;
-    std::unordered_map<std::string, std::string> m_materialPaths;
 
     std::unordered_map<const Sprout::Texture*, std::string> m_textureReverse;
     std::unordered_map<const Sprout::Texture*, std::string> m_imageTextureReverse;
-    std::unordered_map<const Sprout::Mesh*, std::string> m_meshReverse;
-    std::unordered_map<const Sprout::Skeleton*, std::string> m_skeletonReverse;
-    std::unordered_map<const Sprout::AnimationClip*, std::string> m_animClipReverse;
-    std::unordered_map<const Sprout::Material*, std::string> m_materialReverse;
 
 
     static AssetManager* Instance;
     static std::string s_runtimeAssetsPath;
+    static float s_pixelsPerUnit;
 
     AssetManager() = default;
     ~AssetManager();
@@ -75,6 +61,9 @@ public:
         * @return The assets path
     */
     static std::string getAssetsPath();
+    static void setPixelsPerUnit(float pixelsPerUnit);
+    static auto getPixelsPerUnit() -> float;
+
     /*
         * Adds an atlas-mode texture to the asset manager.
         * The texture will be packed into the shared atlas for batched 2D rendering.
@@ -84,7 +73,8 @@ public:
     */
     static void addTexture(const std::string& name,
         const std::string& path,
-        glm::i32 numFrames = 1
+        glm::i32 numFrames = 1,
+        float pixelsPerUnit = 0.0f
     );
 
     /*
@@ -148,7 +138,7 @@ public:
         * @param name The name of the texture
         * @param path The path to the texture
     */
-    static void addImageTexture(const std::string& name, const std::string& path);
+    static void addImageTexture(const std::string& name, const std::string& path, float pixelsPerUnit = 0.0f);
 
     /*
         * Gets the independent-mode texture with the given name.
@@ -157,67 +147,30 @@ public:
     */
     static auto getImageTexture(const std::string& name) -> std::shared_ptr<Sprout::Texture>;
 
-    static void addMesh(const std::string& name, const std::string& filepath);
-    static void addMesh(const std::string& name, std::shared_ptr<Sprout::Mesh> mesh);
-    static auto getMesh(const std::string& name) -> std::shared_ptr<Sprout::Mesh>;
-
-    static void addMaterial(const std::string& name, std::shared_ptr<Sprout::Material> material);
-    static void addMaterial(const std::string& name, const std::string& path);
-    static auto getMaterial(const std::string& name) -> std::shared_ptr<Sprout::Material>;
-    static auto ensureMaterial(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Material>;
-
-    static void addSkeleton(const std::string& name, const std::string& filepath);
-    static auto getSkeleton(const std::string& name) -> std::shared_ptr<Sprout::Skeleton>;
-
-    static void addAnimationClip(const std::string& name, const std::string& filepath,
-                                 const std::string& skeletonName, const std::string& clipName = "");
-    static auto getAnimationClip(const std::string& name) -> std::shared_ptr<Sprout::AnimationClip>;
-
-    static void addSkinnedMesh(const std::string& name, const std::string& filepath,
-                               const std::string& skeletonName);
-
     static auto getTextureName(const std::shared_ptr<Sprout::Texture>& tex) -> std::string;
     static auto getImageTextureName(const std::shared_ptr<Sprout::Texture>& tex) -> std::string;
-    static auto getMeshName(const std::shared_ptr<Sprout::Mesh>& mesh) -> std::string;
-    static auto getSkeletonName(const std::shared_ptr<Sprout::Skeleton>& skel) -> std::string;
-    static auto getAnimationClipName(const std::shared_ptr<Sprout::AnimationClip>& clip) -> std::string;
-    static auto getMaterialName(const std::shared_ptr<Sprout::Material>& mat) -> std::string;
 
     static void setAssetsPath(const std::string& path);
 
     static bool hasTexture(const std::string& name);
     static bool hasImageTexture(const std::string& name);
-    static bool hasMesh(const std::string& name);
-    static bool hasSkeleton(const std::string& name);
-    static bool hasAnimationClip(const std::string& name);
-    static bool hasMaterial(const std::string& name);
 
-    static auto ensureMesh(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Mesh>;
     static auto ensureImageTexture(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Texture>;
-    static auto ensureSkeleton(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Skeleton>;
-    static auto ensureAnimationClip(const std::string& name, const std::string& path,
-                                    const std::string& skeletonName,
-                                    const std::string& clipName = "") -> std::shared_ptr<Sprout::AnimationClip>;
-    static auto ensureSkinnedMesh(const std::string& name, const std::string& path,
-                                  const std::string& skeletonName) -> std::shared_ptr<Sprout::Mesh>;
 
     static auto getTexturePath(const std::string& name) -> std::string;
     static auto getImageTexturePath(const std::string& name) -> std::string;
-    static auto getMeshPath(const std::string& name) -> std::string;
-    static auto getSkeletonPath(const std::string& name) -> std::string;
-    static auto getAnimationClipPath(const std::string& name) -> std::string;
-    static auto getMaterialPath(const std::string& name) -> std::string;
 
-    static auto getMeshNames() -> std::vector<std::string>;
-    static auto getSkeletonNames() -> std::vector<std::string>;
-    static auto getAnimationClipNames() -> std::vector<std::string>;
     static auto getImageTextureNames() -> std::vector<std::string>;
 
     static void registerTexture(const std::string& name, const std::string& path,
                                 Sprout::TextureMode mode = Sprout::TextureMode::Atlas,
-                                glm::i32 numFrames = 1);
+                                glm::i32 numFrames = 1,
+                                float pixelsPerUnit = 0.0f);
 
     static auto findTexture(const std::string& name) -> std::shared_ptr<Sprout::Texture>;
 
     static auto scanAssetFiles(const std::vector<std::string>& extensions) -> std::vector<std::string>;
+
+    static void loadManifest(const std::string& manifestPath);
+    static void loadManifest(const nlohmann::json& manifestJson, const std::string& sourceName = "manifest");
 };

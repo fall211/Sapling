@@ -13,14 +13,18 @@
 
 #include <memory>
 #include <string>
+#include <functional>
+#include <unordered_map>
 
 
 class Scene;
+class Engine;
 class AssetManager;
 
 using namespace std::chrono;
 
 using sceneMap = std::unordered_map<std::string, std::shared_ptr<Scene>>;
+using SceneFactory = std::function<std::shared_ptr<Scene>(Engine&)>;
 
 class Engine {
     Sprout::Window m_window;// = Sprout::Window(640, 360, "Sapling Engine");
@@ -87,6 +91,18 @@ public:
     {
         makeScene(name, std::make_shared<SceneType>(*this));
     }
+
+    void registerSceneFactory(const std::string& type, SceneFactory factory);
+
+    template <typename SceneType>
+    void registerSceneType(const std::string& type)
+    {
+        registerSceneFactory(type, [](Engine& engine) {
+            return std::make_shared<SceneType>(engine);
+        });
+    }
+
+    void loadManifest(const std::string& manifestPath);
         
     void changeScene(const std::string& name);
     auto getScene(const std::string& name) -> std::shared_ptr<Scene>;
@@ -114,8 +130,9 @@ public:
      */
     template <typename T>
     bool sendToScene(const std::string& sceneName, const std::string& type, const T& data);
+
+private:
+    std::unordered_map<std::string, SceneFactory> m_sceneFactories;
     
 };
-
-
 

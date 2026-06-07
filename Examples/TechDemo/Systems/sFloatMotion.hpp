@@ -1,5 +1,5 @@
 //
-//  sFloatAnimator.hpp
+//  sFloatMotion.hpp
 //  Sapling TechDemo
 //
 
@@ -10,21 +10,21 @@
 #include "ECS/Entity.hpp"
 #include "ECS/Component.hpp"
 
-#include "FloatAnimation.hpp"
+#include "FloatMotion.hpp"
 
 namespace System
 {
-    inline void FloatAnimator(std::shared_ptr<EntityManager>& entityManager, float dt)
+    inline void FloatMotion(std::shared_ptr<EntityManager>& entityManager, float dt)
     {
-        auto& entities = entityManager->getEntities("floatAnim");
+        auto& entities = entityManager->getEntities("floatMotion");
 
         for (auto& e : entities)
         {
-            if (!e->hasComponent<Comp::FloatAnimation>())
+            if (!e->hasComponent<Comp::FloatMotion>())
                 continue;
 
-            auto& floatAnim = e->getComponent<Comp::FloatAnimation>();
-            float offsetY = floatAnim.evaluate(dt);
+            auto& floatMotion = e->getComponent<Comp::FloatMotion>();
+            float offsetY = floatMotion.evaluate(dt);
 
             if (e->hasComponent<Comp::Sprite>())
             {

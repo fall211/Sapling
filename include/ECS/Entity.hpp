@@ -113,16 +113,6 @@ class Entity : public std::enable_shared_from_this<Entity>
             return m_components;
         }
     
-        void removeComponentByName(const std::string& name) {
-            for (auto it = m_components.begin(); it != m_components.end(); ++it) {
-                if (std::string(it->second->componentName()) == name) {
-                    it->second->OnRemoveFromEntity();
-                    m_components.erase(it);
-                    return;
-                }
-            }
-        }
-        
         template<typename... Args>
         void ListenForEvent(const std::string& event, std::function<void(Args...)> callback)
         {

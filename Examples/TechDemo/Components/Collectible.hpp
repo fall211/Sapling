@@ -17,7 +17,7 @@ namespace Comp
     {
         int pointValue = 10;
         bool collected = false;
-        float collectRadius = 14.0f;
+        float collectRadius = 0.875f;
 
         explicit Collectible(Inst inst)
             : Component(std::move(inst))

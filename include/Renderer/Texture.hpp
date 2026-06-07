@@ -184,6 +184,9 @@ namespace Sprout
         auto getMode() const -> TextureMode { return m_mode; }
         auto getFilePath() const -> const std::string& { return m_filePath; }
         auto hasPixels() const -> bool { return m_pixels != nullptr; }
+        void setPixelsPerUnit(float pixelsPerUnit);
+        auto getPixelsPerUnit() const -> float { return m_pixelsPerUnit; }
+        auto hasPixelsPerUnitOverride() const -> bool { return m_pixelsPerUnit > 0.0f; }
 
 
         /*
@@ -293,6 +296,7 @@ namespace Sprout
         SamplerConfig m_samplerConfig;
         SamplerConfig m_activeSamplerConfig;
         bool m_retainPixels = false;
+        float m_pixelsPerUnit = 0.0f;
 
         auto uploadToGpu(const unsigned char* data, glm::i32 width, glm::i32 height) -> bool;
         void freePixels();

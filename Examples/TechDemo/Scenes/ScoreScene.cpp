@@ -48,7 +48,7 @@ void ScoreScene::update()
     }
 
     // Animate floating elements
-    System::FloatAnimator(m_entityManager, dt);
+    System::FloatMotion(m_entityManager, dt);
 
     // Handle input
     if (Input::isActionUp("confirm"))
@@ -93,7 +93,7 @@ void ScoreScene::spawnUI()
 {
     // "RESULTS" header
     auto header = m_entityManager->addEntity({"ui", "header"});
-    header->addComponent<Comp::Transform>(glm::vec2(0, 80), Sprout::Pivot::TOP_CENTER, true);
+    header->addComponent<Comp::Transform>(glm::vec2(0, 100), Sprout::Pivot::TOP_CENTER, true);
     header->addComponent<Comp::Text>(
         "RESULTS",
         "game_font", 28, Color::Gold,
@@ -102,15 +102,15 @@ void ScoreScene::spawnUI()
 
     // Score value display
     auto scoreLabel = m_entityManager->addEntity({"ui", "score_label"});
-    scoreLabel->addComponent<Comp::Transform>(glm::vec2(0, 40), Sprout::Pivot::TOP_CENTER, true);
+    scoreLabel->addComponent<Comp::Transform>(glm::vec2(0, 165), Sprout::Pivot::TOP_CENTER, true);
     scoreLabel->addComponent<Comp::Text>(
         "Your Score",
-        "game_font", 12, Color::LightGray,
+        "game_font", 12, Color::PaleGray,
         Sprout::TextJustify::CENTER
     );
 
     auto scoreValue = m_entityManager->addEntity({"ui", "score_value"});
-    scoreValue->addComponent<Comp::Transform>(glm::vec2(0, 10), Sprout::Pivot::TOP_CENTER, true);
+    scoreValue->addComponent<Comp::Transform>(glm::vec2(0, 225), Sprout::Pivot::TOP_CENTER, true);
     scoreValue->addComponent<Comp::Text>(
         "0",
         "game_font", 32, Color::White,
@@ -119,7 +119,7 @@ void ScoreScene::spawnUI()
 
     // Rating text based on score
     auto rating = m_entityManager->addEntity({"ui", "rating"});
-    rating->addComponent<Comp::Transform>(glm::vec2(0, -40), Sprout::Pivot::CENTER, true);
+    rating->addComponent<Comp::Transform>(glm::vec2(0, 100), Sprout::Pivot::CENTER, true);
     rating->addComponent<Comp::Text>(
         "",
         "game_font", 14, Color::Yellow,
@@ -128,28 +128,27 @@ void ScoreScene::spawnUI()
 
     // Decorative floating gems around the score
     float gemPositions[][2] = {
-        {160, 180}, {480, 180}, {120, 300}, {520, 300},
-        {200, 350}, {440, 350}
+        {320, 270}, {920, 270}, {240, 460}, {1000, 460},
+        {400, 540}, {840, 540}
     };
 
     for (int i = 0; i < 6; i++)
     {
         auto gem = m_entityManager->addEntity({"ui", "deco_gem"});
         auto& gemTransform = gem->addComponent<Comp::Transform>(
-            glm::vec2(gemPositions[i][0], gemPositions[i][1])
+            glm::vec2(gemPositions[i][0], gemPositions[i][1]), Sprout::Pivot::TOP_LEFT, true
         );
-        gemTransform.pivot = Sprout::Pivot::CENTER;
-        gemTransform.scale = glm::vec3(2.0f, 2.0f, 1.0f);
+        gemTransform.scale = glm::vec3(3.0f, 3.0f, 1.0f);
         auto& gemSprite = gem->addComponent<Comp::Sprite>(
             AssetManager::getTexture("gem_spin"), 6.0f
         );
         gemSprite.setLayer(Comp::Layer::Midground);
-        gem->addComponent<Comp::FloatAnimation>();
+        gem->addComponent<Comp::FloatMotion>(2.0f, 6.0f);
     }
 
     // "Press Space to Play Again" prompt
     auto prompt = m_entityManager->addEntity({"ui", "prompt"});
-    prompt->addComponent<Comp::Transform>(glm::vec2(0, -70), Sprout::Pivot::BOTTOM_CENTER, true);
+    prompt->addComponent<Comp::Transform>(glm::vec2(0, 120), Sprout::Pivot::BOTTOM_CENTER, true);
     prompt->addComponent<Comp::Text>(
         "Press SPACE to Play Again",
         "game_font", 14, Color::White,
@@ -158,7 +157,7 @@ void ScoreScene::spawnUI()
 
     // "Press ESC for Title Screen" hint
     auto hint = m_entityManager->addEntity({"ui", "hint"});
-    hint->addComponent<Comp::Transform>(glm::vec2(0, -40), Sprout::Pivot::BOTTOM_CENTER, true);
+    hint->addComponent<Comp::Transform>(glm::vec2(0, 70), Sprout::Pivot::BOTTOM_CENTER, true);
     hint->addComponent<Comp::Text>(
         "Press ESC for Title Screen",
         "game_font", 8, Color::Gray,
@@ -204,7 +203,7 @@ void ScoreScene::updateScoreDisplay()
         else
         {
             ratingText.text = "Better Luck Next Time";
-            ratingText.color = Color::LightGray;
+            ratingText.color = Color::PaleGray;
         }
     }
 }

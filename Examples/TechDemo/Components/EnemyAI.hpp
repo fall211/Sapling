@@ -27,11 +27,11 @@ namespace Comp
 
         PatrolType patrolType = PatrolType::HORIZONTAL;
         glm::vec2 direction = glm::vec2(1.0f, 0.0f);
-        float moveSpeed = 50.0f;
-        float patrolDistance = 80.0f;
+        float moveSpeed = 1.5625f;
+        float patrolDistance = 2.5f;
         float distanceTraveled = 0.0f;
-        float damageRadius = 14.0f;
-        float chaseRange = 100.0f;
+        float damageRadius = 0.875f;
+        float chaseRange = 3.125f;
         bool active = true;
 
         explicit EnemyAI(Inst inst)
@@ -61,6 +61,7 @@ namespace Comp
             else if (type == PatrolType::CHASE)
             {
                 direction = glm::vec2(0.0f, 0.0f);
+                chaseRange = distance;
             }
         }
 

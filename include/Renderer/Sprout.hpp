@@ -5,7 +5,6 @@
 
 #pragma once
 #include "Renderer/Font.hpp"
-#include "Renderer/Forward3DPass.hpp"
 #include "Renderer/Quad2DPass.hpp"
 #include "Renderer/Texture.hpp"
 #include "Utility/Color.hpp"
@@ -91,14 +90,15 @@ namespace Sprout
         * quads (array<Quad, MAX_QUADS>): the quads to draw.
         * num_quads (int): the number of quads to draw.
         * view_projection (mat4): the view projection matrix.
-        * camera_xform (mat4): the camera transform matrix.
+        * view_xform (mat4): the 2D view transform matrix.
     */
     struct DrawFrame
     {
         std::array<Quad, MAX_QUADS> quads;
         int num_quads = 0;
         glm::mat4 view_projection;
-        glm::mat4 camera_xform;
+        glm::mat4 ui_projection;
+        glm::mat4 view_xform;
         glm::vec4 viewport; // x, y, width, height
 
         std::array<Quad, MAX_IMAGES> standalone_quads;
@@ -245,24 +245,24 @@ namespace Sprout
             static glm::vec2 screenToWorld(glm::vec2 screenPos);
 
             /*
-                * Moves the camera by the given delta.
-                * @param deltaX The x delta to move the camera
-                * @param deltaY The y delta to move the camera
+                * Moves the 2D view by the given delta.
+                * @param deltaX The x delta to move the view
+                * @param deltaY The y delta to move the view
             */
-            void translateCamera(glm::f32 deltaX, glm::f32 deltaY);
+            void translateView(glm::f32 deltaX, glm::f32 deltaY);
 
             /*
-                * Sets the camera position.
-                * @param position The position to set the camera to
+                * Sets the 2D view position.
+                * @param position The position to set the view to
             */
-            void setCameraPosition(glm::vec2 position);
+            void setViewPosition(glm::vec2 position);
             void setClearColor(float r, float g, float b, float a = 1.0f);
 
             /*
-                * Gets the camera position.
-                * @return The camera position
+                * Gets the 2D view position.
+                * @return The view position
             */
-            glm::vec2 getCameraPosition();
+            glm::vec2 getViewPosition();
 
             /*
                 * Updates the viewport based on window dimensions
@@ -287,17 +287,16 @@ namespace Sprout
             int getHeight() const { return sapp_height(); }
             int getViewportWidth() const { return m_viewportWidth; }
             int getViewportHeight() const { return m_viewportHeight; }
+            int getUiWidth() const { return m_uiWidth; }
+            int getUiHeight() const { return m_uiHeight; }
+            float getDefaultPixelsPerUnit() const;
+            float getWorldWidth() const;
+            float getWorldHeight() const;
 
-            Forward3DPass& getForward3DPass() { return m_forward3DPass; }
             Quad2DPass& getQuad2DPass() { return m_quad2DPass; }
 
             void addRenderPass(RenderPass* pass);
             void removeRenderPass(RenderPass* pass);
-
-#ifdef SAPLING_HAS_EDITOR
-            void setImGuiEnabled(bool enabled) { m_imguiEnabled = enabled; }
-            bool isImGuiEnabled() const { return m_imguiEnabled; }
-#endif
 
         private:
             friend class Quad2DPass;
@@ -308,6 +307,9 @@ namespace Sprout
 
             int m_viewportWidth;
             int m_viewportHeight;
+            int m_uiWidth;
+            int m_uiHeight;
+            float m_defaultPixelsPerUnit = 16.0f;
             float m_viewportAspectRatio = 1.0f;
 
 
@@ -337,13 +339,8 @@ namespace Sprout
             void Cleanup();
             void Event(const sapp_event* e);
 
-            Forward3DPass m_forward3DPass;
             Quad2DPass m_quad2DPass;
             std::vector<RenderPass*> m_renderPasses;
-
-#ifdef SAPLING_HAS_EDITOR
-            bool m_imguiEnabled = false;
-#endif
 
 
             void draw_rect_projected(

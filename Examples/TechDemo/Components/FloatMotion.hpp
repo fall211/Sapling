@@ -1,5 +1,5 @@
 //
-//  FloatAnimation.hpp
+//  FloatMotion.hpp
 //  Sapling TechDemo
 //
 
@@ -17,21 +17,21 @@
 
 namespace Comp
 {
-    struct FloatAnimation : public Component
+    struct FloatMotion : public Component
     {
         float time = 0.0f;
         float speed = 2.0f;
         float amplitude = 4.0f;
         bool randomize = true;
 
-        explicit FloatAnimation(Inst inst)
+        explicit FloatMotion(Inst inst)
             : Component(std::move(inst))
         {
             speed = (static_cast<float>(rand()) / RAND_MAX) * 2.0f + 1.0f;
             time = (static_cast<float>(rand()) / RAND_MAX) * glm::pi<float>() * 2.0f;
         }
 
-        explicit FloatAnimation(Inst inst, float speedIn, float amplitudeIn)
+        explicit FloatMotion(Inst inst, float speedIn, float amplitudeIn)
             : Component(std::move(inst)), speed(speedIn), amplitude(amplitudeIn), randomize(false)
         {}
 
@@ -48,12 +48,12 @@ namespace Comp
 
         void OnAddToEntity() override
         {
-            inst->requestAddTag("floatAnim");
+            inst->requestAddTag("floatMotion");
         }
 
         void OnRemoveFromEntity() override
         {
-            inst->requestRemoveTag("floatAnim");
+            inst->requestRemoveTag("floatMotion");
         }
     };
 }

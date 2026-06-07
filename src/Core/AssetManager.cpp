@@ -5,25 +5,21 @@
 
 #include "Core/AssetManager.hpp"
 #include "Core/AudioEngine.hpp"
+#include "Core/ManifestLoader.hpp"
 #include "Renderer/Font.hpp"
 #include "Utility/Debug.hpp"
 
 #include "fmod_common.h"
+#include <nlohmann/json.hpp>
 
+#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <string>
 
-namespace
-{
-auto normalizeAssetPath(const std::string& path) -> std::string
-{
-    return std::filesystem::path(path).lexically_normal().generic_string();
-}
-}
-
 AssetManager* AssetManager::Instance = nullptr;
 std::string AssetManager::s_runtimeAssetsPath = "";
+float AssetManager::s_pixelsPerUnit = 16.0f;
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -65,22 +61,8 @@ void AssetManager::cleanUp()
     }
     Instance->m_sounds.clear();
 
-    for (auto& pair : Instance->m_meshes) {
-        pair.second->release();
-    }
-    Instance->m_meshes.clear();
-
-    Instance->m_materials.clear();
-    Instance->m_skeletons.clear();
-    Instance->m_animationClips.clear();
-
     Instance->m_textureReverse.clear();
     Instance->m_imageTextureReverse.clear();
-    Instance->m_meshReverse.clear();
-    Instance->m_skeletonReverse.clear();
-    Instance->m_animClipReverse.clear();
-    Instance->m_materialReverse.clear();
-    Instance->m_materialPaths.clear();
 
     if (Instance)
     {
@@ -133,7 +115,23 @@ std::string AssetManager::getAssetsPath() {
     return "../../Assets/"; // fallback path for development
 }
 
-void AssetManager::addTexture(const std::string& name, const std::string& path, const glm::i32 numFrames) {
+void AssetManager::setPixelsPerUnit(float pixelsPerUnit)
+{
+    if (pixelsPerUnit <= 0.0f)
+    {
+        Logger::error("AssetManager: pixelsPerUnit must be positive");
+        return;
+    }
+
+    s_pixelsPerUnit = pixelsPerUnit;
+}
+
+auto AssetManager::getPixelsPerUnit() -> float
+{
+    return s_pixelsPerUnit;
+}
+
+void AssetManager::addTexture(const std::string& name, const std::string& path, const glm::i32 numFrames, const float pixelsPerUnit) {
     auto tex = std::make_shared<Sprout::Texture>();
 
     if (!tex->loadFromFile(getAssetsPath() + path, numFrames))
@@ -142,6 +140,7 @@ void AssetManager::addTexture(const std::string& name, const std::string& path, 
         throw std::runtime_error("Error loading texture file: " + fullPath);
     }
 
+    tex->setPixelsPerUnit(pixelsPerUnit);
     tex->registerTexture();
     Instance->m_textures[name] = tex;
     Instance->m_textureReverse[tex.get()] = name;
@@ -188,7 +187,7 @@ void AssetManager::addSound(const std::string &name, const std::string &path, bo
         throw std::runtime_error("Error loading sound file: " + path);
     }
 
-    sound->setMode(FMOD_LOOP_NORMAL);
+    sound->setMode(mode);
 
     Instance->m_sounds[name] = sound;
 }
@@ -236,7 +235,7 @@ auto AssetManager::getFontNames() -> std::vector<std::string>
     return names;
 }
 
-void AssetManager::addImageTexture(const std::string& name, const std::string& path)
+void AssetManager::addImageTexture(const std::string& name, const std::string& path, const float pixelsPerUnit)
 {
     auto tex = std::make_shared<Sprout::Texture>();
     tex->setMode(Sprout::TextureMode::Independent);
@@ -246,6 +245,7 @@ void AssetManager::addImageTexture(const std::string& name, const std::string& p
         std::string fullPath = getAssetsPath() + path;
         throw std::runtime_error("Error preparing image texture file: " + fullPath);
     }
+    tex->setPixelsPerUnit(pixelsPerUnit);
     Instance->m_imageTextures[name] = tex;
     Instance->m_imageTextureReverse[tex.get()] = name;
     Instance->m_imageTexturePaths[name] = path;
@@ -261,43 +261,6 @@ auto AssetManager::getImageTexture(const std::string& name) -> std::shared_ptr<S
     return it->second;
 }
 
-void AssetManager::addMesh(const std::string& name, const std::string& filepath)
-{
-    std::string normalizedPath = normalizeAssetPath(filepath);
-
-    for (const auto& [existingName, existingPath] : Instance->m_meshPaths) {
-        if (normalizeAssetPath(existingPath) != normalizedPath) continue;
-
-        auto existingMeshIt = Instance->m_meshes.find(existingName);
-        if (existingMeshIt == Instance->m_meshes.end()) continue;
-
-        auto mesh = existingMeshIt->second;
-        Instance->m_meshes[name] = mesh;
-        Instance->m_meshReverse[mesh.get()] = name;
-        Instance->m_meshPaths[name] = normalizedPath;
-        return;
-    }
-
-    auto mesh = std::make_shared<Sprout::Mesh>();
-    std::string full_path = getAssetsPath() + normalizedPath;
-    std::string ext = std::filesystem::path(normalizedPath).extension().string();
-    for (auto& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-
-    bool ok = false;
-    if (ext == ".fbx") {
-        ok = mesh->loadFBX(normalizedPath);
-    } else {
-        ok = mesh->loadOBJ(normalizedPath);
-    }
-    if (!ok) {
-        throw std::runtime_error("Error loading mesh file: " + full_path);
-    }
-    Instance->m_meshes[name] = mesh;
-    Instance->m_meshReverse[mesh.get()] = name;
-    Instance->m_meshPaths[name] = normalizedPath;
-}
-
-
 void AssetManager::setAssetsPath(const std::string& path) {
     s_runtimeAssetsPath = path;
 }
@@ -311,18 +274,6 @@ bool AssetManager::hasImageTexture(const std::string& name) {
     return Instance->m_imageTextures.count(name) > 0;
 }
 
-bool AssetManager::hasMesh(const std::string& name) {
-    return Instance->m_meshes.count(name) > 0;
-}
-
-bool AssetManager::hasSkeleton(const std::string& name) {
-    return Instance->m_skeletons.count(name) > 0;
-}
-
-bool AssetManager::hasAnimationClip(const std::string& name) {
-    return Instance->m_animationClips.count(name) > 0;
-}
-
 auto AssetManager::getTextureName(const std::shared_ptr<Sprout::Texture>& tex) -> std::string {
     auto it = Instance->m_textureReverse.find(tex.get());
     return (it != Instance->m_textureReverse.end()) ? it->second : "";
@@ -331,162 +282,6 @@ auto AssetManager::getTextureName(const std::shared_ptr<Sprout::Texture>& tex) -
 auto AssetManager::getImageTextureName(const std::shared_ptr<Sprout::Texture>& tex) -> std::string {
     auto it = Instance->m_imageTextureReverse.find(tex.get());
     return (it != Instance->m_imageTextureReverse.end()) ? it->second : "";
-}
-
-auto AssetManager::getMeshName(const std::shared_ptr<Sprout::Mesh>& mesh) -> std::string {
-    auto it = Instance->m_meshReverse.find(mesh.get());
-    return (it != Instance->m_meshReverse.end()) ? it->second : "";
-}
-
-auto AssetManager::getSkeletonName(const std::shared_ptr<Sprout::Skeleton>& skel) -> std::string {
-    auto it = Instance->m_skeletonReverse.find(skel.get());
-    return (it != Instance->m_skeletonReverse.end()) ? it->second : "";
-}
-
-auto AssetManager::getAnimationClipName(const std::shared_ptr<Sprout::AnimationClip>& clip) -> std::string {
-    auto it = Instance->m_animClipReverse.find(clip.get());
-    return (it != Instance->m_animClipReverse.end()) ? it->second : "";
-}
-
-void AssetManager::addMesh(const std::string& name, std::shared_ptr<Sprout::Mesh> mesh)
-{
-    Instance->m_meshReverse[mesh.get()] = name;
-    Instance->m_meshes[name] = std::move(mesh);
-}
-
-auto AssetManager::getMesh(const std::string& name) -> std::shared_ptr<Sprout::Mesh>
-{
-    auto it = Instance->m_meshes.find(name);
-    if (it == Instance->m_meshes.end()) {
-        throw std::runtime_error("Mesh not found: " + name);
-    }
-    return it->second;
-}
-
-void AssetManager::addMaterial(const std::string& name, std::shared_ptr<Sprout::Material> material)
-{
-    Instance->m_materials[name] = material;
-    Instance->m_materialReverse[material.get()] = name;
-}
-
-void AssetManager::addMaterial(const std::string& name, const std::string& path)
-{
-    auto material = std::make_shared<Sprout::Material>();
-    if (!material->loadFromFile(path)) {
-        throw std::runtime_error("Failed to load material: " + path);
-    }
-    Instance->m_materials[name] = material;
-    Instance->m_materialPaths[name] = path;
-    Instance->m_materialReverse[material.get()] = name;
-}
-
-auto AssetManager::getMaterial(const std::string& name) -> std::shared_ptr<Sprout::Material>
-{
-    auto it = Instance->m_materials.find(name);
-    if (it == Instance->m_materials.end()) {
-        throw std::runtime_error("Material not found: " + name);
-    }
-    return it->second;
-}
-
-void AssetManager::addSkeleton(const std::string& name, const std::string& filepath)
-{
-    auto skeleton = std::make_shared<Sprout::Skeleton>();
-    if (!skeleton->loadFromFBX(filepath)) {
-        throw std::runtime_error("Error loading skeleton: " + filepath);
-    }
-    Instance->m_skeletons[name] = skeleton;
-    Instance->m_skeletonReverse[skeleton.get()] = name;
-    Instance->m_skeletonPaths[name] = filepath;
-}
-
-auto AssetManager::getSkeleton(const std::string& name) -> std::shared_ptr<Sprout::Skeleton>
-{
-    auto it = Instance->m_skeletons.find(name);
-    if (it == Instance->m_skeletons.end()) {
-        throw std::runtime_error("Skeleton not found: " + name);
-    }
-    return it->second;
-}
-
-void AssetManager::addAnimationClip(const std::string& name, const std::string& filepath,
-                                    const std::string& skeletonName, const std::string& clipName)
-{
-    auto skeleton = getSkeleton(skeletonName);
-    auto clip = std::make_shared<Sprout::AnimationClip>();
-    if (!clip->loadFromFBX(filepath, *skeleton, clipName)) {
-        throw std::runtime_error("Error loading animation clip: " + filepath);
-    }
-    Instance->m_animationClips[name] = clip;
-    Instance->m_animClipReverse[clip.get()] = name;
-    Instance->m_animClipPaths[name] = filepath;
-}
-
-auto AssetManager::getAnimationClip(const std::string& name) -> std::shared_ptr<Sprout::AnimationClip>
-{
-    auto it = Instance->m_animationClips.find(name);
-    if (it == Instance->m_animationClips.end()) {
-        throw std::runtime_error("Animation clip not found: " + name);
-    }
-    return it->second;
-}
-
-void AssetManager::addSkinnedMesh(const std::string& name, const std::string& filepath,
-                                  const std::string& skeletonName)
-{
-    std::string normalizedPath = normalizeAssetPath(filepath);
-
-    for (const auto& [existingName, existingPath] : Instance->m_meshPaths) {
-        if (normalizeAssetPath(existingPath) != normalizedPath) continue;
-
-        auto existingMeshIt = Instance->m_meshes.find(existingName);
-        if (existingMeshIt == Instance->m_meshes.end()) continue;
-
-        auto mesh = existingMeshIt->second;
-        Instance->m_meshes[name] = mesh;
-        Instance->m_meshReverse[mesh.get()] = name;
-        Instance->m_meshPaths[name] = normalizedPath;
-        return;
-    }
-
-    auto skeleton = getSkeleton(skeletonName);
-    auto mesh = std::make_shared<Sprout::Mesh>();
-    if (!mesh->loadFBX(normalizedPath, skeleton.get())) {
-        throw std::runtime_error("Error loading skinned mesh: " + normalizedPath);
-    }
-    Instance->m_meshes[name] = mesh;
-    Instance->m_meshReverse[mesh.get()] = name;
-    Instance->m_meshPaths[name] = normalizedPath;
-}
-
-auto AssetManager::getMeshNames() -> std::vector<std::string> {
-    std::vector<std::string> names;
-    names.reserve(Instance->m_meshes.size());
-    for (const auto& [name, _] : Instance->m_meshes) {
-        names.push_back(name);
-    }
-    std::sort(names.begin(), names.end());
-    return names;
-}
-
-auto AssetManager::getSkeletonNames() -> std::vector<std::string> {
-    std::vector<std::string> names;
-    names.reserve(Instance->m_skeletons.size());
-    for (const auto& [name, _] : Instance->m_skeletons) {
-        names.push_back(name);
-    }
-    std::sort(names.begin(), names.end());
-    return names;
-}
-
-auto AssetManager::getAnimationClipNames() -> std::vector<std::string> {
-    std::vector<std::string> names;
-    names.reserve(Instance->m_animationClips.size());
-    for (const auto& [name, _] : Instance->m_animationClips) {
-        names.push_back(name);
-    }
-    std::sort(names.begin(), names.end());
-    return names;
 }
 
 auto AssetManager::getImageTextureNames() -> std::vector<std::string> {
@@ -499,27 +294,6 @@ auto AssetManager::getImageTextureNames() -> std::vector<std::string> {
     return names;
 }
 
-bool AssetManager::hasMaterial(const std::string& name) {
-    return Instance->m_materials.count(name) > 0;
-}
-
-auto AssetManager::ensureMaterial(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Material> {
-    if (hasMaterial(name)) return getMaterial(name);
-    addMaterial(name, path);
-    return getMaterial(name);
-}
-
-auto AssetManager::getMaterialName(const std::shared_ptr<Sprout::Material>& mat) -> std::string {
-    if (!mat) return "";
-    auto it = Instance->m_materialReverse.find(mat.get());
-    return (it != Instance->m_materialReverse.end()) ? it->second : "";
-}
-
-auto AssetManager::getMaterialPath(const std::string& name) -> std::string {
-    auto it = Instance->m_materialPaths.find(name);
-    return (it != Instance->m_materialPaths.end()) ? it->second : "";
-}
-
 auto AssetManager::getTexturePath(const std::string& name) -> std::string {
     auto it = Instance->m_texturePaths.find(name);
     return (it != Instance->m_texturePaths.end()) ? it->second : "";
@@ -530,62 +304,18 @@ auto AssetManager::getImageTexturePath(const std::string& name) -> std::string {
     return (it != Instance->m_imageTexturePaths.end()) ? it->second : "";
 }
 
-auto AssetManager::getMeshPath(const std::string& name) -> std::string {
-    auto it = Instance->m_meshPaths.find(name);
-    return (it != Instance->m_meshPaths.end()) ? it->second : "";
-}
-
-auto AssetManager::getSkeletonPath(const std::string& name) -> std::string {
-    auto it = Instance->m_skeletonPaths.find(name);
-    return (it != Instance->m_skeletonPaths.end()) ? it->second : "";
-}
-
-auto AssetManager::getAnimationClipPath(const std::string& name) -> std::string {
-    auto it = Instance->m_animClipPaths.find(name);
-    return (it != Instance->m_animClipPaths.end()) ? it->second : "";
-}
-
-
-
-auto AssetManager::ensureMesh(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Mesh> {
-    if (hasMesh(name)) return getMesh(name);
-    addMesh(name, path);
-    return getMesh(name);
-}
-
 auto AssetManager::ensureImageTexture(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Texture> {
     if (hasImageTexture(name)) return getImageTexture(name);
     addImageTexture(name, path);
     return getImageTexture(name);
 }
 
-auto AssetManager::ensureSkeleton(const std::string& name, const std::string& path) -> std::shared_ptr<Sprout::Skeleton> {
-    if (hasSkeleton(name)) return getSkeleton(name);
-    addSkeleton(name, path);
-    return getSkeleton(name);
-}
-
-auto AssetManager::ensureAnimationClip(const std::string& name, const std::string& path,
-                                       const std::string& skeletonName,
-                                       const std::string& clipName) -> std::shared_ptr<Sprout::AnimationClip> {
-    if (hasAnimationClip(name)) return getAnimationClip(name);
-    addAnimationClip(name, path, skeletonName, clipName);
-    return getAnimationClip(name);
-}
-
-auto AssetManager::ensureSkinnedMesh(const std::string& name, const std::string& path,
-                                     const std::string& skeletonName) -> std::shared_ptr<Sprout::Mesh> {
-    if (hasMesh(name)) return getMesh(name);
-    addSkinnedMesh(name, path, skeletonName);
-    return getMesh(name);
-}
-
 void AssetManager::registerTexture(const std::string& name, const std::string& path,
-                                   Sprout::TextureMode mode, glm::i32 numFrames) {
+                                   Sprout::TextureMode mode, glm::i32 numFrames, const float pixelsPerUnit) {
     if (mode == Sprout::TextureMode::Atlas) {
-        addTexture(name, path, numFrames);
+        addTexture(name, path, numFrames, pixelsPerUnit);
     } else {
-        addImageTexture(name, path);
+        addImageTexture(name, path, pixelsPerUnit);
     }
 }
 
@@ -624,4 +354,225 @@ auto AssetManager::scanAssetFiles(const std::vector<std::string>& extensions) ->
 
     std::sort(results.begin(), results.end());
     return results;
+}
+
+static bool hasRequiredManifestString(const nlohmann::json& entry,
+                                      const std::string& fieldName,
+                                      const std::string& manifestPath,
+                                      const std::string& entryType)
+{
+    if (entry.contains(fieldName) && entry[fieldName].is_string() && !entry[fieldName].get<std::string>().empty())
+    {
+        return true;
+    }
+
+    Logger::error("AssetManager: " + manifestPath + " has " + entryType + " entry without required string field '" + fieldName + "'");
+    return false;
+}
+
+void AssetManager::loadManifest(const std::string& manifestPath)
+{
+    const auto manifestJson = ManifestLoader::loadJson(manifestPath);
+    loadManifest(manifestJson, manifestPath);
+}
+
+void AssetManager::loadManifest(const nlohmann::json& manifestJson, const std::string& sourceName)
+{
+    if (!manifestJson.is_object() || !manifestJson.contains("assets"))
+    {
+        return;
+    }
+
+    const auto& assets = manifestJson["assets"];
+    if (!assets.is_object())
+    {
+        Logger::error("AssetManager: " + sourceName + " field 'assets' must be an object");
+        return;
+    }
+
+    if (assets.contains("pixelsPerUnit"))
+    {
+        if (!assets["pixelsPerUnit"].is_number() || assets["pixelsPerUnit"].get<float>() <= 0.0f)
+        {
+            Logger::error("AssetManager: " + sourceName + " field 'assets.pixelsPerUnit' must be a positive number");
+        }
+        else
+        {
+            setPixelsPerUnit(assets["pixelsPerUnit"].get<float>());
+        }
+    }
+
+    if (assets.contains("textures"))
+    {
+        if (!assets["textures"].is_array())
+        {
+            Logger::error("AssetManager: " + sourceName + " field 'assets.textures' must be an array");
+        }
+        else
+        {
+            for (const auto& texture : assets["textures"])
+            {
+                if (!texture.is_object())
+                {
+                    Logger::error("AssetManager: " + sourceName + " has a texture entry that is not an object");
+                    continue;
+                }
+
+                if (!hasRequiredManifestString(texture, "name", sourceName, "texture") ||
+                    !hasRequiredManifestString(texture, "path", sourceName, "texture"))
+                {
+                    continue;
+                }
+
+                const std::string name = texture["name"].get<std::string>();
+                const std::string path = texture["path"].get<std::string>();
+                if (texture.contains("mode") && !texture["mode"].is_string())
+                {
+                    Logger::error("AssetManager: " + sourceName + " texture '" + name + "' field 'mode' must be a string");
+                    continue;
+                }
+                if (texture.contains("frames") &&
+                    (!texture["frames"].is_number_integer() || texture["frames"].get<int>() <= 0))
+                {
+                    Logger::error("AssetManager: " + sourceName + " texture '" + name + "' field 'frames' must be a positive integer");
+                    continue;
+                }
+
+                const std::string mode = texture.contains("mode") ? texture["mode"].get<std::string>() : "atlas";
+                const glm::i32 frames = texture.contains("frames") ? texture["frames"].get<glm::i32>() : 1;
+                float pixelsPerUnit = 0.0f;
+                if (texture.contains("pixelsPerUnit"))
+                {
+                    if (!texture["pixelsPerUnit"].is_number() || texture["pixelsPerUnit"].get<float>() <= 0.0f)
+                    {
+                        Logger::error("AssetManager: " + sourceName + " texture '" + name + "' field 'pixelsPerUnit' must be a positive number");
+                    }
+                    else
+                    {
+                        pixelsPerUnit = texture["pixelsPerUnit"].get<float>();
+                    }
+                }
+
+                if (mode == "atlas")
+                {
+                    addTexture(name, path, frames, pixelsPerUnit);
+                }
+                else if (mode == "image")
+                {
+                    addImageTexture(name, path, pixelsPerUnit);
+                }
+                else
+                {
+                    Logger::error("AssetManager: " + sourceName + " texture '" + name + "' has unknown mode '" + mode + "'");
+                }
+            }
+        }
+    }
+
+    if (assets.contains("fonts"))
+    {
+        if (!assets["fonts"].is_array())
+        {
+            Logger::error("AssetManager: " + sourceName + " field 'assets.fonts' must be an array");
+        }
+        else
+        {
+            for (const auto& font : assets["fonts"])
+            {
+                if (!font.is_object())
+                {
+                    Logger::error("AssetManager: " + sourceName + " has a font entry that is not an object");
+                    continue;
+                }
+
+                if (!hasRequiredManifestString(font, "name", sourceName, "font") ||
+                    !hasRequiredManifestString(font, "path", sourceName, "font"))
+                {
+                    continue;
+                }
+
+                if (!font.contains("size") || !font["size"].is_number())
+                {
+                    Logger::error("AssetManager: " + sourceName + " font '" + font["name"].get<std::string>() + "' is missing numeric field 'size'");
+                    continue;
+                }
+
+                addFont(font["name"].get<std::string>(), font["path"].get<std::string>(), font["size"].get<float>());
+            }
+        }
+    }
+
+    if (assets.contains("sounds"))
+    {
+        if (!assets["sounds"].is_array())
+        {
+            Logger::error("AssetManager: " + sourceName + " field 'assets.sounds' must be an array");
+        }
+        else
+        {
+            for (const auto& sound : assets["sounds"])
+            {
+                if (!sound.is_object())
+                {
+                    Logger::error("AssetManager: " + sourceName + " has a sound entry that is not an object");
+                    continue;
+                }
+
+                if (!hasRequiredManifestString(sound, "name", sourceName, "sound") ||
+                    !hasRequiredManifestString(sound, "path", sourceName, "sound"))
+                {
+                    continue;
+                }
+
+                const std::string name = sound["name"].get<std::string>();
+                if (sound.contains("loop") && !sound["loop"].is_boolean())
+                {
+                    Logger::error("AssetManager: " + sourceName + " sound '" + name + "' field 'loop' must be a boolean");
+                    continue;
+                }
+
+                addSound(name,
+                         sound["path"].get<std::string>(),
+                         sound.contains("loop") ? sound["loop"].get<bool>() : false);
+            }
+        }
+    }
+
+    if (assets.contains("tilesets"))
+    {
+        if (!assets["tilesets"].is_array())
+        {
+            Logger::error("AssetManager: " + sourceName + " field 'assets.tilesets' must be an array");
+        }
+        else
+        {
+            for (const auto& tileset : assets["tilesets"])
+            {
+                if (!tileset.is_object())
+                {
+                    Logger::error("AssetManager: " + sourceName + " has a tileset entry that is not an object");
+                    continue;
+                }
+
+                if (!hasRequiredManifestString(tileset, "name", sourceName, "tileset") ||
+                    !hasRequiredManifestString(tileset, "path", sourceName, "tileset"))
+                {
+                    continue;
+                }
+
+                if (!tileset.contains("tileWidth") || !tileset["tileWidth"].is_number_integer() ||
+                    !tileset.contains("tileHeight") || !tileset["tileHeight"].is_number_integer() ||
+                    tileset["tileWidth"].get<int>() <= 0 || tileset["tileHeight"].get<int>() <= 0)
+                {
+                    Logger::error("AssetManager: " + sourceName + " tileset '" + tileset["name"].get<std::string>() + "' requires numeric 'tileWidth' and 'tileHeight'");
+                    continue;
+                }
+
+                addTileSet(tileset["name"].get<std::string>(),
+                           tileset["path"].get<std::string>(),
+                           static_cast<size_t>(tileset["tileWidth"].get<int>()),
+                           static_cast<size_t>(tileset["tileHeight"].get<int>()));
+            }
+        }
+    }
 }

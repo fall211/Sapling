@@ -64,24 +64,7 @@ class Scene
         virtual void sRender(EntityList& entities);
 
         /*
-            * Called every frame to render 3D entities
-            * Override this function to implement custom 3D rendering
-            * By default it finds the active camera, collects lights, and submits mesh draw requests
-            * @param entities The list of entities to render
-        */
-        virtual void sRender3D(EntityList& entities);
-
-        /*
-            * Sets up 3D render state: finds active camera, computes projection/view matrices,
-            * extracts frustum, and collects lights. Override to customize camera/projection setup
-            * (e.g. editor viewport with different aspect ratio).
-            * @param entities The list of entities to search for camera and lights
-        */
-        virtual void setupRenderState(EntityList& entities);
-
-        /*
-            * Unified render: sets up render state, then iterates all entities once
-            * to submit both 3D meshes and 2D sprites/text.
+            * Called every frame to render entities.
             * Override for custom render ordering.
         */
         virtual void render();
@@ -108,7 +91,7 @@ class Scene
         void disable();
 
         /*
-            * Updates all animation state (2D sprite frames, color overrides, 3D skeletal animation).
+            * Updates all 2D sprite animation state.
             * Called automatically from preUpdate(). Can also be called manually.
         */
         void sUpdateAnimations(EntityList& entities);

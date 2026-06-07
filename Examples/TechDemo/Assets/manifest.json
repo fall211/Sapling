@@ -1,0 +1,45 @@
+{
+  "assets": {
+    "pixelsPerUnit": 16,
+    "textures": [
+      { "name": "player", "path": "Sprites/player.png", "mode": "atlas", "frames": 1 },
+      { "name": "player_walk", "path": "Sprites/player_walk.png", "mode": "atlas", "frames": 4 },
+      { "name": "gem", "path": "Sprites/gem.png", "mode": "atlas", "frames": 1 },
+      { "name": "gem_spin", "path": "Sprites/gem_spin.png", "mode": "atlas", "frames": 4 },
+      { "name": "enemy", "path": "Sprites/enemy.png", "mode": "atlas", "frames": 1 },
+      { "name": "enemy_walk", "path": "Sprites/enemy_walk.png", "mode": "atlas", "frames": 4 },
+      { "name": "wall", "path": "Sprites/wall.png", "mode": "atlas", "frames": 1 },
+      { "name": "floor", "path": "Sprites/floor.png", "mode": "atlas", "frames": 1 },
+      { "name": "heart", "path": "Sprites/heart.png", "mode": "atlas", "frames": 1 },
+      { "name": "particle", "path": "Sprites/particle.png", "mode": "atlas", "frames": 1 },
+      { "name": "debugCircle", "path": "Sprites/debug.png", "mode": "atlas", "frames": 1 }
+    ],
+    "fonts": [
+      { "name": "game_font", "path": "Fonts/game_font.ttf", "size": 63 }
+    ],
+    "sounds": [
+      { "name": "bgm", "path": "Audio/bgm.wav", "loop": true },
+      { "name": "collect", "path": "Audio/collect.wav" },
+      { "name": "step", "path": "Audio/step.wav" },
+      { "name": "hurt", "path": "Audio/hurt.wav" },
+      { "name": "scene_change", "path": "Audio/scene_change.wav" },
+      { "name": "score_jingle", "path": "Audio/score_jingle.wav" }
+    ]
+  },
+  "input": {
+    "actions": [
+      { "name": "moveLeft", "keys": ["LEFT", "A"] },
+      { "name": "moveRight", "keys": ["RIGHT", "D"] },
+      { "name": "moveUp", "keys": ["UP", "W"] },
+      { "name": "moveDown", "keys": ["DOWN", "S"] },
+      { "name": "confirm", "keys": ["SPACE", "ENTER"] },
+      { "name": "quit", "keys": ["ESCAPE"] }
+    ]
+  },
+  "scenes": [
+    { "name": "title", "type": "TitleScene" },
+    { "name": "game", "type": "GameScene" },
+    { "name": "score", "type": "ScoreScene" }
+  ],
+  "initialScene": "title"
+}

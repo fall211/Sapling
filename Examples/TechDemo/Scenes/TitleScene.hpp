@@ -8,8 +8,8 @@
 #include "Core/Scene.hpp"
 #include "Utility/Color.hpp"
 
-#include "sFloatAnimator.hpp"
-#include "FloatAnimation.hpp"
+#include "sFloatMotion.hpp"
+#include "FloatMotion.hpp"
 
 class TitleScene : public Scene
 {

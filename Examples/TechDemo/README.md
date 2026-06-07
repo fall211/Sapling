@@ -8,12 +8,13 @@ A top-down 2D collector game that showcases the core features of the **Sapling E
 |---|---|
 | **Multiple Scenes** | Title screen → Gameplay → Score screen, with transitions |
 | **Input System** | WASD/Arrow movement, Space to confirm, ESC to quit — all via named actions |
+| **Data Manifest** | Assets, input bindings, startup scenes, and initial scene are loaded from `Assets/manifest.json` |
 | **Sprites (Static)** | Player idle, wall tiles, floor tiles, hearts |
 | **Sprites (Animated)** | Player walk cycle (4 frames), gem spin (4 frames), enemy bounce (4 frames) |
 | **Text Rendering** | HUD score, timer, wave counter, title text, score screen rating |
 | **Audio** | Background music (looping), collect SFX, hurt SFX, scene transition, victory jingle |
-| **Custom Components** | `PlayerController`, `Collectible`, `FloatAnimation`, `EnemyAI` |
-| **Custom Systems** | `sPlayerMovement`, `sCollectibles`, `sFloatAnimator`, `sEnemyAI` |
+| **Custom Components** | `PlayerController`, `Collectible`, `FloatMotion`, `EnemyAI` |
+| **Custom Systems** | `sPlayerMovement`, `sCollectibles`, `sFloatMotion`, `sEnemyAI` |
 | **Inter-Scene Messaging** | Final score is sent from GameScene → ScoreScene via `Engine::sendToScene` |
 | **Entity Tags & Queries** | Entities tagged as `"player"`, `"collectible"`, `"enemy"`, `"hud"`, etc. |
 | **Bounding Box Collision** | Player has a `BBox` component; distance-based overlap checks for gems and enemies |
@@ -94,7 +95,7 @@ cmake --build build/Debug
 
 ```
 Examples/TechDemo/
-├── main.cpp                  # Entry point — engine init, asset registration, scene setup
+├── main.cpp                  # Entry point — engine init, scene type registration, manifest load
 ├── CMakeLists.txt            # Build configuration
 ├── build_and_run.sh          # One-step build & run script
 ├── generate_assets.py        # Generates placeholder PNGs and WAVs
@@ -106,14 +107,15 @@ Examples/TechDemo/
 ├── Components/
 │   ├── PlayerController.hpp  # Player movement speed, score, health, facing
 │   ├── Collectible.hpp       # Point value and collection radius
-│   ├── FloatAnimation.hpp    # Sine-wave bobbing effect
+│   ├── FloatMotion.hpp    # Sine-wave bobbing effect
 │   └── EnemyAI.hpp           # Patrol (horizontal/vertical) and chase behaviors
 ├── Systems/
 │   ├── sPlayerMovement.hpp   # Input → velocity, wall clamping, animation switching
 │   ├── sCollectibles.hpp     # Distance-based gem collection and scoring
-│   ├── sFloatAnimator.hpp    # Applies float animation offsets to sprites
+│   ├── sFloatMotion.hpp    # Applies float animation offsets to sprites
 │   └── sEnemyAI.hpp          # Enemy movement, patrol reversal, player damage
 └── Assets/
+    ├── manifest.json         # Data-driven asset, input, and startup scene registration
     ├── Sprites/              # Generated PNG sprite sheets
     ├── Audio/                # Generated WAV sound effects and music
     └── Fonts/                # TTF font (copied from system)

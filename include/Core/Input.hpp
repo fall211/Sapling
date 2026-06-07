@@ -13,6 +13,9 @@
 #include <map>
 #include <memory>
 #include <array>
+#include <vector>
+
+#include <nlohmann/json_fwd.hpp>
 
 struct Key
 {
@@ -114,6 +117,13 @@ class Input
             * @param negativeKey The keycode that will provide negative input
         */
         static void makeAxis(const std::string& name, int positiveKey, int negativeKey);
+
+        /*
+            * Loads input actions and axes from a JSON manifest.
+            * @param manifestPath Path to the manifest JSON file, relative to the assets dir
+        */
+        static void loadManifest(const std::string& manifestPath);
+        static void loadManifest(const nlohmann::json& manifestJson, const std::string& sourceName = "manifest");
         
         /*
             * Gets the value of the axis with the given name
@@ -170,6 +180,4 @@ class Input
         static auto getMouseKey(Input::MouseButton button) -> Key&;
 
 };
-
-
 

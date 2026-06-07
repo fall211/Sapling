@@ -25,10 +25,6 @@
 #include "Utility/Color.hpp"
 #include "Renderer/quad.h"
 
-#ifdef SAPLING_HAS_EDITOR
-#include "Editor/ImGuiContext.hpp"
-#endif
-
 #include <algorithm>
 
 namespace Sprout
@@ -69,24 +65,34 @@ namespace Sprout
     Window::Window(int viewportWidth, int viewportHeight, const char* title)
         :   m_title(title),
             m_viewportWidth(viewportWidth),
-            m_viewportHeight(viewportHeight)
+            m_viewportHeight(viewportHeight),
+            m_uiWidth(viewportWidth * 4),
+            m_uiHeight(viewportHeight * 4)
         {
             memset(&m_state, 0, sizeof(m_state));
             memset(&draw_frame, 0, sizeof(draw_frame));
 
             m_viewportAspectRatio = static_cast<float>(m_viewportWidth) / static_cast<float>(m_viewportHeight);
 
-            // set the projection to the viewport (will update once the viewport gets scaled to window)
             draw_frame.view_projection = glm::ortho(
                 0.0f,
-                static_cast<float>(m_viewportWidth),
-                static_cast<float>(m_viewportHeight),
+                getWorldWidth(),
+                getWorldHeight(),
                 0.0f,
                 1.0f,
                 -1.0f
             );
 
-            draw_frame.camera_xform = glm::mat4(1.0f);
+            draw_frame.ui_projection = glm::ortho(
+                0.0f,
+                static_cast<float>(m_uiWidth),
+                static_cast<float>(m_uiHeight),
+                0.0f,
+                1.0f,
+                -1.0f
+            );
+
+            draw_frame.view_xform = glm::mat4(1.0f);
 
             // init viewport dimensions (will be updated in Init())
             draw_frame.viewport = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -230,14 +236,8 @@ namespace Sprout
             m_state.bind.images[IMG_fontTex1] = sg_make_image(&fallback_desc);
         }
 
-#ifdef SAPLING_HAS_EDITOR
-        ImGuiContext::getInstance().initialize();
-#endif
-
         // register built-in render passes
-        m_forward3DPass.priority = 100;
-        m_quad2DPass.priority = 200;
-        addRenderPass(&m_forward3DPass);
+        m_quad2DPass.priority = 100;
         addRenderPass(&m_quad2DPass);
     }
 
@@ -260,10 +260,12 @@ namespace Sprout
         }
 
         // reset to defaults each frame
-        draw_frame.viewport = glm::vec4(0, 0, sapp_width(), sapp_height());
+        updateViewport();
         draw_frame.view_projection = glm::ortho(
-            0.0f, static_cast<float>(m_viewportWidth), static_cast<float>(m_viewportHeight), 0.0f, 1.0f, -1.0f);
-        draw_frame.camera_xform = glm::mat4(1.0f);
+            0.0f, getWorldWidth(), getWorldHeight(), 0.0f, 1.0f, -1.0f);
+        draw_frame.ui_projection = glm::ortho(
+            0.0f, static_cast<float>(m_uiWidth), static_cast<float>(m_uiHeight), 0.0f, 1.0f, -1.0f);
+        draw_frame.view_xform = glm::mat4(1.0f);
 
         // clear all render passes
         for (auto* pass : m_renderPasses) {
@@ -275,12 +277,6 @@ namespace Sprout
         auto now = std::chrono::system_clock::now();
         m_delta_time = std::chrono::duration<double>(now - m_last_frame_time).count();
         m_last_frame_time = now;
-
-#ifdef SAPLING_HAS_EDITOR
-        if (m_imguiEnabled) {
-            ImGuiContext::getInstance().newFrame();
-        }
-#endif
 
         if (m_update_frame_callback)
         {
@@ -314,42 +310,17 @@ namespace Sprout
             }
         }
 
-#ifdef SAPLING_HAS_EDITOR
-        if (m_imguiEnabled) {
-            ImGuiContext::getInstance().render();
-        }
-#endif
-
         sg_end_pass();
         sg_commit();
     }
 
     void Window::Cleanup()
     {
-#ifdef SAPLING_HAS_EDITOR
-        ImGuiContext::getInstance().cleanup();
-#endif
         sg_shutdown();
     }
 
     void Window::Event(const sapp_event* e)
     {
-#ifdef SAPLING_HAS_EDITOR
-        if (m_imguiEnabled) {
-            ImGuiContext::getInstance().handleEvent(e);
-            if (ImGuiContext::getInstance().wantsCaptureMouse() &&
-                (e->type == SAPP_EVENTTYPE_MOUSE_DOWN || e->type == SAPP_EVENTTYPE_MOUSE_UP ||
-                 e->type == SAPP_EVENTTYPE_MOUSE_MOVE || e->type == SAPP_EVENTTYPE_MOUSE_SCROLL)) {
-                return;
-            }
-            if (ImGuiContext::getInstance().wantsCaptureKeyboard() &&
-                (e->type == SAPP_EVENTTYPE_KEY_DOWN || e->type == SAPP_EVENTTYPE_KEY_UP ||
-                 e->type == SAPP_EVENTTYPE_CHAR)) {
-                return;
-            }
-        }
-#endif
-
         if (m_event_callback)
         {
             m_event_callback(e);
@@ -377,11 +348,10 @@ namespace Sprout
         desc.frame_cb = frame_cb;
         desc.cleanup_cb = cleanup_cb;
         desc.event_cb = event_cb;
+        desc.width = Instance->m_uiWidth;
+        desc.height = Instance->m_uiHeight;
         desc.high_dpi = true;
-        desc.fullscreen = true;
-#ifdef SAPLING_HAS_EDITOR
         desc.fullscreen = false;
-#endif
         desc.window_title = Instance->m_title;
         return desc;
     }

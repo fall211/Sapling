@@ -39,7 +39,8 @@ namespace Sprout
           m_pixelOwnership(other.m_pixelOwnership),
           m_samplerConfig(other.m_samplerConfig),
           m_activeSamplerConfig(other.m_activeSamplerConfig),
-          m_retainPixels(other.m_retainPixels)
+          m_retainPixels(other.m_retainPixels),
+          m_pixelsPerUnit(other.m_pixelsPerUnit)
     {
         other.m_width = 0;
         other.m_height = 0;
@@ -52,6 +53,7 @@ namespace Sprout
         other.m_status = TextureStatus::Unloaded;
         other.m_pixels = nullptr;
         other.m_pixelOwnership = PixelOwnership::None;
+        other.m_pixelsPerUnit = 0.0f;
     }
 
     Texture& Texture::operator=(Texture&& other) noexcept
@@ -78,6 +80,7 @@ namespace Sprout
             m_samplerConfig = other.m_samplerConfig;
             m_activeSamplerConfig = other.m_activeSamplerConfig;
             m_retainPixels = other.m_retainPixels;
+            m_pixelsPerUnit = other.m_pixelsPerUnit;
 
             other.m_width = 0;
             other.m_height = 0;
@@ -90,8 +93,14 @@ namespace Sprout
             other.m_status = TextureStatus::Unloaded;
             other.m_pixels = nullptr;
             other.m_pixelOwnership = PixelOwnership::None;
+            other.m_pixelsPerUnit = 0.0f;
         }
         return *this;
+    }
+
+    void Texture::setPixelsPerUnit(float pixelsPerUnit)
+    {
+        m_pixelsPerUnit = pixelsPerUnit > 0.0f ? pixelsPerUnit : 0.0f;
     }
 
     auto Texture::loadFromFile(const std::string& path, glm::i32 numFrames) -> bool

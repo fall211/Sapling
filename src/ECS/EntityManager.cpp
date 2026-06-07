@@ -4,9 +4,6 @@
 //
 
 #include "ECS/EntityManager.hpp"
-#include "Core/PrefabLoader.hpp"
-
-#include <nlohmann/json.hpp>
 
 EntityManager::EntityManager()
 {
@@ -150,31 +147,4 @@ auto EntityManager::getEntitiesInRange(const std::string& tag, EntityList& entit
         }
     }
     return entitiesWithTagInRange;
-}
-
-auto EntityManager::loadPrefab(const std::string& prefabPath) -> std::shared_ptr<Entity>
-{
-    auto& loader = PrefabLoader::getInstance();
-    nlohmann::json prefabJson = loader.loadFile(prefabPath);
-    return loader.createEntityFromJson(prefabJson, *this);
-}
-
-auto EntityManager::loadPrefab(const std::string& prefabPath, const nlohmann::json& overrides) -> std::shared_ptr<Entity>
-{
-    auto& loader = PrefabLoader::getInstance();
-    nlohmann::json prefabJson = loader.loadFile(prefabPath);
-
-    if (overrides.contains("name")) prefabJson["name"] = overrides["name"];
-    if (overrides.contains("tags")) prefabJson["tags"] = overrides["tags"];
-
-    for (auto& [compName, compData] : overrides.items()) {
-        if (compName == "name" || compName == "tags") continue;
-        if (prefabJson["components"].contains(compName)) {
-            prefabJson["components"][compName].merge_patch(compData);
-        } else {
-            prefabJson["components"][compName] = compData;
-        }
-    }
-
-    return loader.createEntityFromJson(prefabJson, *this);
 }

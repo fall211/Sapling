@@ -245,6 +245,21 @@ namespace Sprout
         m_event_callback = std::move(callback);
     }
 
+    float Window::getDefaultPixelsPerUnit() const
+    {
+        return m_defaultPixelsPerUnit;
+    }
+
+    float Window::getWorldWidth() const
+    {
+        return static_cast<float>(m_viewportWidth) / getDefaultPixelsPerUnit();
+    }
+
+    float Window::getWorldHeight() const
+    {
+        return static_cast<float>(m_viewportHeight) / getDefaultPixelsPerUnit();
+    }
+
 
     //  RENDERING
 
@@ -274,8 +289,8 @@ namespace Sprout
             if (anchor_offset.x == 0)       pos.x = position.x;
             if (anchor_offset.y == 0)       pos.y = position.y;
 
-            anchor_offset.x = anchor_offset.x * m_viewportWidth + pos.x;
-            anchor_offset.y = anchor_offset.y * m_viewportHeight + pos.y;
+            anchor_offset.x = anchor_offset.x * m_uiWidth + pos.x;
+            anchor_offset.y = anchor_offset.y * m_uiHeight + pos.y;
 
             xform0 = glm::translate(xform0, glm::vec3(anchor_offset, 0.0f));
         }
@@ -306,11 +321,11 @@ namespace Sprout
         // draw
         if (worldSpace)
         {
-            draw_rect_projected(draw_frame.view_projection * draw_frame.camera_xform * xform0, frame_size, layer, uv, color_override, pivot, 0);
+            draw_rect_projected(draw_frame.view_projection * draw_frame.view_xform * xform0, frame_size, layer, uv, color_override, pivot, 0);
         }
         else // ui elements are screen space
         {
-            draw_rect_projected(draw_frame.view_projection * xform0, frame_size, layer, uv, color_override, pivot, 0);
+            draw_rect_projected(draw_frame.ui_projection * xform0, frame_size, layer, uv, color_override, pivot, 0);
         }
     }
 
@@ -329,11 +344,11 @@ namespace Sprout
 
         if (worldSpace)
         {
-            draw_rect_projected(draw_frame.view_projection * draw_frame.camera_xform * xform, glm::vec2(width, height), 1.0f, uv, color, Pivot::CENTER, 0);
+            draw_rect_projected(draw_frame.view_projection * draw_frame.view_xform * xform, glm::vec2(width, height), 1.0f, uv, color, Pivot::CENTER, 0);
         }
         else
         {
-            draw_rect_projected(draw_frame.view_projection * xform, glm::vec2(width, height), 1.0f, uv, color, Pivot::CENTER, 0);
+            draw_rect_projected(draw_frame.ui_projection * xform, glm::vec2(width, height), 1.0f, uv, color, Pivot::CENTER, 0);
         }
     }
 
@@ -425,8 +440,8 @@ namespace Sprout
             if (anchor_offset.x == 0)       pos.x = position.x;
             if (anchor_offset.y == 0)       pos.y = position.y;
 
-            anchor_offset.x = anchor_offset.x * m_viewportWidth + pos.x;
-            anchor_offset.y = anchor_offset.y * m_viewportHeight + pos.y;
+            anchor_offset.x = anchor_offset.x * m_uiWidth + pos.x;
+            anchor_offset.y = anchor_offset.y * m_uiHeight + pos.y;
 
             xform0 = glm::translate(xform0, glm::vec3(anchor_offset, 0.0f));
         }
@@ -460,11 +475,11 @@ namespace Sprout
         glm::mat4 projection;
         if (worldSpace)
         {
-            projection = draw_frame.view_projection * draw_frame.camera_xform * xform0;
+            projection = draw_frame.view_projection * draw_frame.view_xform * xform0;
         }
         else
         {
-            projection = draw_frame.view_projection * xform0;
+            projection = draw_frame.ui_projection * xform0;
         }
 
         for (int i = 0; i < 4; i++)
@@ -489,7 +504,10 @@ namespace Sprout
             return glm::vec2(-1.0f, -1.0f);
         }
 
-        glm::mat4 inv_proj = glm::inverse(Window::getInstance()->draw_frame.view_projection * Window::getInstance()->draw_frame.camera_xform);
+        viewport_pos.x = (viewport_pos.x / static_cast<float>(Instance->m_uiWidth)) * Instance->getWorldWidth();
+        viewport_pos.y = (viewport_pos.y / static_cast<float>(Instance->m_uiHeight)) * Instance->getWorldHeight();
+
+        glm::mat4 inv_proj = glm::inverse(Window::getInstance()->draw_frame.view_projection * Window::getInstance()->draw_frame.view_xform);
 
         glm::vec4 world_pos = inv_proj * glm::vec4(viewport_pos.x, viewport_pos.y, 0.0f, 1.0f);
 
@@ -528,11 +546,22 @@ namespace Sprout
             m_viewportWidth = width;
             m_viewportHeight = height;
             m_viewportAspectRatio = static_cast<float>(width) / static_cast<float>(height);
+            m_uiWidth = m_viewportWidth * 4;
+            m_uiHeight = m_viewportHeight * 4;
 
             draw_frame.view_projection = glm::ortho(
                 0.0f,
-                static_cast<float>(m_viewportWidth),
-                static_cast<float>(m_viewportHeight),
+                getWorldWidth(),
+                getWorldHeight(),
+                0.0f,
+                1.0f,
+                -1.0f
+            );
+
+            draw_frame.ui_projection = glm::ortho(
+                0.0f,
+                static_cast<float>(m_uiWidth),
+                static_cast<float>(m_uiHeight),
                 0.0f,
                 1.0f,
                 -1.0f
@@ -551,16 +580,16 @@ namespace Sprout
                 return glm::vec2(-1.0f, -1.0f);
             }
 
-            float viewport_x = ((windowPos.x - viewport.x) / viewport.z) * m_viewportWidth;
-            float viewport_y = ((windowPos.y - viewport.y) / viewport.w) * m_viewportHeight;
+            float viewport_x = ((windowPos.x - viewport.x) / viewport.z) * m_uiWidth;
+            float viewport_y = ((windowPos.y - viewport.y) / viewport.w) * m_uiHeight;
 
             return glm::vec2(viewport_x, viewport_y);
         }
 
-    void Window::translateCamera(glm::f32 deltaX, glm::f32 deltaY)
+    void Window::translateView(glm::f32 deltaX, glm::f32 deltaY)
     {
-        draw_frame.camera_xform = glm::translate(
-            draw_frame.camera_xform,
+        draw_frame.view_xform = glm::translate(
+            draw_frame.view_xform,
             glm::vec3(-deltaX, -deltaY, 0.0f)
         );
     }
@@ -570,28 +599,28 @@ namespace Sprout
         m_state.pass_action.colors[0].clear_value = {r, g, b, a};
     }
 
-    void Window::setCameraPosition(glm::vec2 position)
+    void Window::setViewPosition(glm::vec2 position)
     {
         glm::vec3 scale = glm::vec3(
-            draw_frame.camera_xform[0][0],
-            draw_frame.camera_xform[1][1],
-            draw_frame.camera_xform[2][2]
+            draw_frame.view_xform[0][0],
+            draw_frame.view_xform[1][1],
+            draw_frame.view_xform[2][2]
         );
         glm::mat4 xform = glm::mat4(1.0f);
         xform = glm::scale(xform, scale);
         xform = glm::translate(xform, glm::vec3(-position, 0.0f));
-        draw_frame.camera_xform = xform;
+        draw_frame.view_xform = xform;
     }
 
-    glm::vec2 Window::getCameraPosition()
+    glm::vec2 Window::getViewPosition()
     {
         glm::vec2 scale = glm::vec2(
-            draw_frame.camera_xform[0][0],
-            draw_frame.camera_xform[1][1]
+            draw_frame.view_xform[0][0],
+            draw_frame.view_xform[1][1]
         );
         glm::vec2 position = glm::vec2(
-            -draw_frame.camera_xform[3][0],
-            -draw_frame.camera_xform[3][1]
+            -draw_frame.view_xform[3][0],
+            -draw_frame.view_xform[3][1]
         );
         return position / scale;
     }
@@ -656,8 +685,8 @@ namespace Sprout
             pos.x = (anchor_offset.x != 0) ? -position.x * anchor_offset.x : position.x;
             pos.y = (anchor_offset.y != 0) ? -position.y * anchor_offset.y : position.y;
 
-            pos.x += anchor_offset.x * m_viewportWidth;
-            pos.y += anchor_offset.y * m_viewportHeight;
+            pos.x += anchor_offset.x * m_uiWidth;
+            pos.y += anchor_offset.y * m_uiHeight;
 
             if (justify == Sprout::TextJustify::CENTER)
             {
@@ -704,11 +733,11 @@ namespace Sprout
             glm::mat4 projection;
             if (worldSpace)
             {
-                projection = draw_frame.view_projection * draw_frame.camera_xform * charXform;
+                projection = draw_frame.view_projection * draw_frame.view_xform * charXform;
             }
             else
             {
-                projection = draw_frame.view_projection * charXform;
+                projection = draw_frame.ui_projection * charXform;
             }
             draw_rect_projected(projection, size, depth, uv, color, Pivot::TOP_LEFT, font->fontId+1);
 

@@ -16,13 +16,13 @@
 
 namespace System
 {
-    // Arena boundaries (in world pixels)
+    // Arena boundaries (in world units)
     struct ArenaBounds
     {
-        float minX = 32.0f;
-        float minY = 32.0f;
-        float maxX = 608.0f;
-        float maxY = 448.0f;
+        float minX = 1.0f;
+        float minY = 1.0f;
+        float maxX = 19.0f;
+        float maxY = 10.25f;
     };
 
     inline void PlayerMovement(std::shared_ptr<EntityManager>& entityManager, float dt, const ArenaBounds& bounds = {})
@@ -63,8 +63,8 @@ namespace System
             transform.position.y += transform.velocity.y * dt;
 
             // Clamp to arena bounds
-            float halfW = 8.0f; // half player sprite width
-            float halfH = 8.0f; // half player sprite height
+            float halfW = 0.5f;
+            float halfH = 0.5f;
             transform.position.x = std::max(bounds.minX + halfW, std::min(bounds.maxX - halfW, transform.position.x));
             transform.position.y = std::max(bounds.minY + halfH, std::min(bounds.maxY - halfH, transform.position.y));
 

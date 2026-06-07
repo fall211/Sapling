@@ -317,7 +317,7 @@ def gen_wall():
     draw_filled_rect(pixels, w, h, 3, 8, 3, 15, mortar)
     draw_filled_rect(pixels, w, h, 11, 8, 11, 15, mortar)
 
-    # Light edges on bricks
+    # Pale edges on bricks
     draw_filled_rect(pixels, w, h, 1, 1, 6, 1, light)
     draw_filled_rect(pixels, w, h, 9, 1, 15, 1, light)
     draw_filled_rect(pixels, w, h, 1, 9, 2, 9, light)

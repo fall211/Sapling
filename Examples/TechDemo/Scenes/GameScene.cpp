@@ -19,11 +19,10 @@
 
 GameScene::GameScene(Engine& engine) : Scene(engine)
 {
-    // Set arena bounds (walls are 2 tiles thick = 32px)
-    m_bounds.minX = 32.0f;
-    m_bounds.minY = 32.0f;
-    m_bounds.maxX = ARENA_W - 32.0f;
-    m_bounds.maxY = ARENA_H - 32.0f;
+    m_bounds.minX = 1.0f;
+    m_bounds.minY = 1.0f;
+    m_bounds.maxX = ARENA_W - 1.0f;
+    m_bounds.maxY = ARENA_H - 1.0f;
 
     m_enemyBounds = { m_bounds.minX, m_bounds.minY, m_bounds.maxX, m_bounds.maxY };
 
@@ -138,7 +137,7 @@ void GameScene::update()
     }
 
     // Float animation for gems
-    System::FloatAnimator(m_entityManager, dt);
+    System::FloatMotion(m_entityManager, dt);
 
     // ── Spawn new gems periodically ─────────────────────
     m_gemSpawnTimer += dt;
@@ -181,19 +180,15 @@ void GameScene::spawnArena()
     auto wallTex = AssetManager::getTexture("wall");
     auto floorTex = AssetManager::getTexture("floor");
 
-    // Spawn floor tiles (2x2 tile grid to fill the arena)
-    int tilesX = ARENA_W / TILE_SIZE;
-    int tilesY = ARENA_H / TILE_SIZE;
-
-    for (int ty = 0; ty < tilesY; ty++)
+    for (int ty = 0; ty < ARENA_ROWS; ty++)
     {
-        for (int tx = 0; tx < tilesX; tx++)
+        for (int tx = 0; tx < ARENA_COLS; tx++)
         {
-            bool isWall = (tx < 2 || tx >= tilesX - 2 || ty < 2 || ty >= tilesY - 2);
+            bool isWall = (tx < 1 || tx >= ARENA_COLS - 1 || ty < 1 || ty >= ARENA_ROWS - 1);
 
             auto tile = m_entityManager->addEntity({"arena"});
             auto& transform = tile->addComponent<Comp::Transform>(
-                glm::vec2(tx * TILE_SIZE, ty * TILE_SIZE)
+                glm::vec2(static_cast<float>(tx) * TILE_SIZE, static_cast<float>(ty) * TILE_SIZE)
             );
             transform.pivot = Sprout::Pivot::TOP_LEFT;
 
@@ -212,21 +207,21 @@ void GameScene::spawnPlayer()
         glm::vec2(ARENA_W / 2.0f, ARENA_H / 2.0f)
     );
     transform.pivot = Sprout::Pivot::CENTER;
-    transform.scale = glm::vec3(2.0f, 2.0f, 1.0f);
+    transform.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     auto& sprite = player->addComponent<Comp::Sprite>(AssetManager::getTexture("player"));
     sprite.setLayer(Comp::Layer::Player);
 
-    player->addComponent<Comp::PlayerController>(120.0f);
+    player->addComponent<Comp::PlayerController>(3.75f);
 
     // Add a bounding box for potential physics-based collision
-    player->addComponent<Comp::BBox>(12.0f, 12.0f);
+    player->addComponent<Comp::BBox>(0.75f, 0.75f);
 }
 
 void GameScene::spawnGem()
 {
     // Random position within the arena (with margin from walls)
-    float margin = 48.0f;
+    float margin = 1.5f;
     float x = margin + static_cast<float>(rand()) / RAND_MAX * (ARENA_W - margin * 2);
     float y = margin + static_cast<float>(rand()) / RAND_MAX * (ARENA_H - margin * 2);
 
@@ -234,7 +229,7 @@ void GameScene::spawnGem()
 
     auto& transform = gem->addComponent<Comp::Transform>(glm::vec2(x, y));
     transform.pivot = Sprout::Pivot::CENTER;
-    transform.scale = glm::vec3(2.0f, 2.0f, 1.0f);
+    transform.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     auto& sprite = gem->addComponent<Comp::Sprite>(
         AssetManager::getTexture("gem_spin"), 6.0f
@@ -245,8 +240,8 @@ void GameScene::spawnGem()
     int pointValues[] = {10, 10, 10, 20, 20, 50};
     int points = pointValues[rand() % 6];
 
-    gem->addComponent<Comp::Collectible>(points, 16.0f);
-    gem->addComponent<Comp::FloatAnimation>();
+    gem->addComponent<Comp::Collectible>(points, 1.0f);
+    gem->addComponent<Comp::FloatMotion>(2.0f, 0.125f);
 
     m_totalGemsSpawned++;
 }
@@ -257,7 +252,7 @@ void GameScene::spawnEnemy(float x, float y, Comp::EnemyAI::PatrolType type, flo
 
     auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(x, y));
     transform.pivot = Sprout::Pivot::CENTER;
-    transform.scale = glm::vec3(2.0f, 2.0f, 1.0f);
+    transform.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     auto& sprite = enemy->addComponent<Comp::Sprite>(
         AssetManager::getTexture("enemy_walk"), 5.0f
@@ -276,26 +271,26 @@ void GameScene::spawnWaveEnemies()
     {
         case 1:
             // Wave 1: Two horizontal patrol enemies
-            spawnEnemy(120, 120, Comp::EnemyAI::PatrolType::HORIZONTAL, 40.0f, 100.0f);
-            spawnEnemy(500, 360, Comp::EnemyAI::PatrolType::HORIZONTAL, 50.0f, 120.0f);
+            spawnEnemy(3.75f, 3.75f, Comp::EnemyAI::PatrolType::HORIZONTAL, 1.25f, 3.125f);
+            spawnEnemy(15.625f, 9.0f, Comp::EnemyAI::PatrolType::HORIZONTAL, 1.5625f, 3.75f);
             break;
 
         case 2:
             // Wave 2: Add vertical patrol enemies
-            spawnEnemy(200, 200, Comp::EnemyAI::PatrolType::VERTICAL, 45.0f, 150.0f);
-            spawnEnemy(440, 150, Comp::EnemyAI::PatrolType::VERTICAL, 55.0f, 100.0f);
+            spawnEnemy(6.25f, 6.25f, Comp::EnemyAI::PatrolType::VERTICAL, 1.40625f, 4.6875f);
+            spawnEnemy(13.75f, 4.6875f, Comp::EnemyAI::PatrolType::VERTICAL, 1.71875f, 3.125f);
             break;
 
         case 3:
         default:
             // Wave 3+: Add a chase enemy plus patrol
-            spawnEnemy(100, 400, Comp::EnemyAI::PatrolType::CHASE, 35.0f + m_wave * 3.0f, 200.0f);
+            spawnEnemy(3.125f, 10.0f, Comp::EnemyAI::PatrolType::CHASE, 1.09375f + m_wave * 0.09375f, 6.25f);
             spawnEnemy(
-                60.0f + static_cast<float>(rand() % 500),
-                60.0f + static_cast<float>(rand() % 360),
+                1.875f + static_cast<float>(rand() % 500) / 32.0f,
+                1.875f + static_cast<float>(rand() % 270) / 32.0f,
                 Comp::EnemyAI::PatrolType::HORIZONTAL,
-                40.0f + m_wave * 5.0f,
-                80.0f + m_wave * 10.0f
+                1.25f + m_wave * 0.15625f,
+                2.5f + m_wave * 0.3125f
             );
             break;
     }
@@ -305,7 +300,7 @@ void GameScene::spawnHUD()
 {
     // Score display (top-left)
     auto scoreText = m_entityManager->addEntity({"hud", "score_display"});
-    scoreText->addComponent<Comp::Transform>(glm::vec2(-300, -10), Sprout::Pivot::TOP_CENTER, true);
+    scoreText->addComponent<Comp::Transform>(glm::vec2(24, 24), Sprout::Pivot::TOP_LEFT, true);
     scoreText->addComponent<Comp::Text>(
         "Score: 0",
         "game_font", 12, Color::White,
@@ -314,7 +309,7 @@ void GameScene::spawnHUD()
 
     // Timer display (top-right)
     auto timerText = m_entityManager->addEntity({"hud", "timer_display"});
-    timerText->addComponent<Comp::Transform>(glm::vec2(300, -10), Sprout::Pivot::TOP_CENTER, true);
+    timerText->addComponent<Comp::Transform>(glm::vec2(24, 24), Sprout::Pivot::TOP_RIGHT, true);
     timerText->addComponent<Comp::Text>(
         "Time: 60",
         "game_font", 12, Color::White,
@@ -323,7 +318,7 @@ void GameScene::spawnHUD()
 
     // Wave display (top-center)
     auto waveText = m_entityManager->addEntity({"hud", "wave_display"});
-    waveText->addComponent<Comp::Transform>(glm::vec2(0, -10), Sprout::Pivot::TOP_CENTER, true);
+    waveText->addComponent<Comp::Transform>(glm::vec2(0, 24), Sprout::Pivot::TOP_CENTER, true);
     waveText->addComponent<Comp::Text>(
         "Wave 1",
         "game_font", 12, Color::Gold,
@@ -335,16 +330,18 @@ void GameScene::spawnHUD()
     {
         auto heart = m_entityManager->addEntity({"hud", "heart"});
         heart->addComponent<Comp::Transform>(
-            glm::vec2(-300 + i * 30, 15),
-            Sprout::Pivot::BOTTOM_CENTER, true
+            glm::vec2(24 + i * 48, 28),
+            Sprout::Pivot::BOTTOM_LEFT, true
         );
         auto& heartSprite = heart->addComponent<Comp::Sprite>(AssetManager::getTexture("heart"));
         heartSprite.setLayer(Comp::Layer::UserInterface);
+        auto& heartTransform = heart->getComponent<Comp::Transform>();
+        heartTransform.scale = glm::vec3(3.0f, 3.0f, 1.0f);
     }
 
     // Gem count display (bottom-center)
     auto gemCount = m_entityManager->addEntity({"hud", "gem_count"});
-    gemCount->addComponent<Comp::Transform>(glm::vec2(0, 15), Sprout::Pivot::BOTTOM_CENTER, true);
+    gemCount->addComponent<Comp::Transform>(glm::vec2(0, 28), Sprout::Pivot::BOTTOM_CENTER, true);
     gemCount->addComponent<Comp::Text>(
         "Gems: 0",
         "game_font", 10, Color::Yellow,
@@ -363,7 +360,7 @@ void GameScene::spawnHUD()
 
     // "Press Space" after game over (hidden initially)
     auto continuePrompt = m_entityManager->addEntity({"hud", "continue_prompt"});
-    continuePrompt->addComponent<Comp::Transform>(glm::vec2(0, -40), Sprout::Pivot::CENTER, true);
+    continuePrompt->addComponent<Comp::Transform>(glm::vec2(0, 80), Sprout::Pivot::CENTER, true);
     auto& cpText = continuePrompt->addComponent<Comp::Text>(
         "",
         "game_font", 12, Color::White,

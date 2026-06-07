@@ -14,7 +14,7 @@ namespace Color {
 
     // grayscale
     inline const glm::vec4 Gray         = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-    inline const glm::vec4 LightGray    = glm::vec4(0.75f, 0.75f, 0.75f, 1.0f);
+    inline const glm::vec4 PaleGray    = glm::vec4(0.75f, 0.75f, 0.75f, 1.0f);
     inline const glm::vec4 DarkGray     = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
 
     // primary colors

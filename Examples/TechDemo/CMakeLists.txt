@@ -28,7 +28,7 @@ set(SAPLING_SOURCES
     ${SAPLING_SRC}/Core/AudioEngine.cpp
     ${SAPLING_SRC}/Core/Input.cpp
     ${SAPLING_SRC}/Core/Logger.cpp
-    ${SAPLING_SRC}/Core/PrefabLoader.cpp
+    ${SAPLING_SRC}/Core/ManifestLoader.cpp
     ${SAPLING_SRC}/ECS/Entity.cpp
     ${SAPLING_SRC}/ECS/EntityManager.cpp
     ${SAPLING_SRC}/ECS/Component.cpp
@@ -36,16 +36,8 @@ set(SAPLING_SOURCES
     ${SAPLING_SRC}/Renderer/Window.cpp
     ${SAPLING_SRC}/Renderer/Texture.cpp
     ${SAPLING_SRC}/Renderer/Font.cpp
-    ${SAPLING_SRC}/Renderer/Mesh.cpp
-    ${SAPLING_SRC}/Renderer/Material.cpp
-    ${SAPLING_SRC}/Renderer/Forward3DPass.cpp
     ${SAPLING_SRC}/Renderer/Quad2DPass.cpp
-    ${SAPLING_SRC}/Renderer/Skeleton.cpp
-    ${SAPLING_SRC}/Renderer/Animation.cpp
     ${SAPLING_SRC}/Utility/Physics.cpp
-
-    # ufbx FBX loader
-    ${THIRD_PARTY}/ufbx/ufbx.c
 )
 
 if(APPLE)
@@ -59,7 +51,6 @@ set(SAPLING_INCLUDE_DIRS
     ${SAPLING_INCLUDE}
     ${THIRD_PARTY}
     ${THIRD_PARTY}/stb
-    ${THIRD_PARTY}/ufbx
     ${FMOD_CORE_INC}
     ${FMOD_STUDIO_INC}
 )

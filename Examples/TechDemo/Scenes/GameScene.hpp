@@ -10,23 +10,22 @@
 
 #include "sPlayerMovement.hpp"
 #include "sCollectibles.hpp"
-#include "sFloatAnimator.hpp"
+#include "sFloatMotion.hpp"
 #include "sEnemyAI.hpp"
 
 #include "PlayerController.hpp"
 #include "Collectible.hpp"
-#include "FloatAnimation.hpp"
+#include "FloatMotion.hpp"
 #include "EnemyAI.hpp"
 
 class GameScene : public Scene
 {
 private:
-    // Arena dimensions (in pixels)
     static constexpr int ARENA_COLS = 20;
-    static constexpr int ARENA_ROWS = 15;
-    static constexpr int TILE_SIZE = 16;
-    static constexpr int ARENA_W = ARENA_COLS * TILE_SIZE * 2;  // 640
-    static constexpr int ARENA_H = ARENA_ROWS * TILE_SIZE * 2;  // 480
+    static constexpr int ARENA_ROWS = 12;
+    static constexpr float TILE_SIZE = 1.0f;
+    static constexpr float ARENA_W = 20.0f;
+    static constexpr float ARENA_H = 11.25f;
 
     System::ArenaBounds m_bounds;
     System::EnemyAIBounds m_enemyBounds;

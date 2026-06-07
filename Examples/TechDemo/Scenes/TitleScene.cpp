@@ -46,7 +46,7 @@ void TitleScene::update()
     }
 
     // Animate floating entities
-    System::FloatAnimator(m_entityManager, m_engine.deltaTime());
+    System::FloatMotion(m_entityManager, m_engine.deltaTime());
 
     // Check for start input
     if (Input::isActionUp("confirm"))
@@ -80,7 +80,7 @@ void TitleScene::spawnUI()
 {
     // Title text
     auto title = m_entityManager->addEntity({"ui", "title"});
-    title->addComponent<Comp::Transform>(glm::vec2(0, 80), Sprout::Pivot::TOP_CENTER, true);
+    title->addComponent<Comp::Transform>(glm::vec2(0, 100), Sprout::Pivot::TOP_CENTER, true);
     title->addComponent<Comp::Text>(
         "SAPLING TECH DEMO",
         "game_font", 24, Color::White,
@@ -89,47 +89,46 @@ void TitleScene::spawnUI()
 
     // Subtitle
     auto subtitle = m_entityManager->addEntity({"ui", "subtitle"});
-    subtitle->addComponent<Comp::Transform>(glm::vec2(0, 40), Sprout::Pivot::TOP_CENTER, true);
+    subtitle->addComponent<Comp::Transform>(glm::vec2(0, 160), Sprout::Pivot::TOP_CENTER, true);
     subtitle->addComponent<Comp::Text>(
         "A Top-Down Collector",
-        "game_font", 12, Color::LightGray,
+        "game_font", 12, Color::PaleGray,
         Sprout::TextJustify::CENTER
     );
 
     // Animated player preview in the center of the screen
     auto playerPreview = m_entityManager->addEntity({"ui", "preview"});
-    auto& previewTransform = playerPreview->addComponent<Comp::Transform>(glm::vec2(320, 220));
+    auto& previewTransform = playerPreview->addComponent<Comp::Transform>(glm::vec2(0, 0), Sprout::Pivot::CENTER, true);
     previewTransform.pivot = Sprout::Pivot::CENTER;
-    previewTransform.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+    previewTransform.scale = glm::vec3(4.0f, 4.0f, 1.0f);
     auto& previewSprite = playerPreview->addComponent<Comp::Sprite>(
         AssetManager::getTexture("player_walk"), 8.0f
     );
     previewSprite.setLayer(Comp::Layer::Player);
-    playerPreview->addComponent<Comp::FloatAnimation>(2.0f, 6.0f);
+    playerPreview->addComponent<Comp::FloatMotion>(2.0f, 6.0f);
 
     // Floating gems around the player preview
     float gemPositions[][2] = {
-        {240, 200}, {400, 200}, {260, 260}, {380, 260}, {320, 170}
+        {520, 320}, {760, 320}, {560, 440}, {720, 440}, {640, 240}
     };
 
     for (int i = 0; i < 5; i++)
     {
         auto gem = m_entityManager->addEntity({"ui", "preview_gem"});
         auto& gemTransform = gem->addComponent<Comp::Transform>(
-            glm::vec2(gemPositions[i][0], gemPositions[i][1])
+            glm::vec2(gemPositions[i][0], gemPositions[i][1]), Sprout::Pivot::TOP_LEFT, true
         );
-        gemTransform.pivot = Sprout::Pivot::CENTER;
-        gemTransform.scale = glm::vec3(2.0f, 2.0f, 1.0f);
+        gemTransform.scale = glm::vec3(3.0f, 3.0f, 1.0f);
         auto& gemSprite = gem->addComponent<Comp::Sprite>(
             AssetManager::getTexture("gem_spin"), 6.0f
         );
         gemSprite.setLayer(Comp::Layer::Midground);
-        gem->addComponent<Comp::FloatAnimation>();
+        gem->addComponent<Comp::FloatMotion>(2.0f, 6.0f);
     }
 
     // "Press Space to Start" prompt
     auto prompt = m_entityManager->addEntity({"ui", "prompt"});
-    prompt->addComponent<Comp::Transform>(glm::vec2(0, -60), Sprout::Pivot::BOTTOM_CENTER, true);
+    prompt->addComponent<Comp::Transform>(glm::vec2(0, 120), Sprout::Pivot::BOTTOM_CENTER, true);
     prompt->addComponent<Comp::Text>(
         "Press SPACE to Start",
         "game_font", 14, Color::White,
@@ -138,7 +137,7 @@ void TitleScene::spawnUI()
 
     // Controls hint
     auto controls = m_entityManager->addEntity({"ui", "controls"});
-    controls->addComponent<Comp::Transform>(glm::vec2(0, -30), Sprout::Pivot::BOTTOM_CENTER, true);
+    controls->addComponent<Comp::Transform>(glm::vec2(0, 70), Sprout::Pivot::BOTTOM_CENTER, true);
     controls->addComponent<Comp::Text>(
         "WASD / Arrows to Move  |  ESC to Quit",
         "game_font", 8, Color::Gray,

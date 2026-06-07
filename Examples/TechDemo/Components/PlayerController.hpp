@@ -15,7 +15,7 @@ namespace Comp
 {
     struct PlayerController : public Component
     {
-        float moveSpeed = 120.0f;
+        float moveSpeed = 3.75f;
         int score = 0;
         int health = 3;
         bool isMoving = false;

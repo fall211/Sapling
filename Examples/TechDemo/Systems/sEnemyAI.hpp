@@ -23,10 +23,10 @@ namespace System
 {
     struct EnemyAIBounds
     {
-        float minX = 32.0f;
-        float minY = 32.0f;
-        float maxX = 608.0f;
-        float maxY = 448.0f;
+        float minX = 1.0f;
+        float minY = 1.0f;
+        float maxX = 19.0f;
+        float maxY = 10.25f;
     };
 
     inline void EnemyMovement(std::shared_ptr<EntityManager>& entityManager, float dt, const EnemyAIBounds& bounds = {})
@@ -71,7 +71,7 @@ namespace System
                     }
 
                     // Also reverse if hitting arena boundaries
-                    float halfSize = 8.0f;
+                    float halfSize = 0.5f;
                     if (transform.position.x <= bounds.minX + halfSize ||
                         transform.position.x >= bounds.maxX - halfSize)
                     {
@@ -114,7 +114,7 @@ namespace System
                     }
 
                     // Clamp to bounds
-                    float halfSize = 8.0f;
+                    float halfSize = 0.5f;
                     transform.position.x = std::max(bounds.minX + halfSize,
                         std::min(bounds.maxX - halfSize, transform.position.x));
                     transform.position.y = std::max(bounds.minY + halfSize,
@@ -210,7 +210,7 @@ namespace System
                     // Knock the player back
                     if (dist > 0.01f)
                     {
-                        glm::vec2 knockback = glm::normalize(playerPos - enemyPos) * 40.0f;
+                        glm::vec2 knockback = glm::normalize(playerPos - enemyPos) * 1.25f;
                         playerTransform.position += glm::vec3(knockback, 0.0f);
                     }
 

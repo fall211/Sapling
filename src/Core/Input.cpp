@@ -5,9 +5,13 @@
 
 #include "Core/Input.hpp"
 #include "Core/Logger.hpp"
+#include "Core/ManifestLoader.hpp"
 #include "Renderer/Sprout.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <stdexcept>
+#include <unordered_map>
 
 Input* Input::Instance = nullptr;
 
@@ -198,6 +202,168 @@ void Input::makeAxis(const std::string& name, const int positiveKey, const int n
         Instance->m_keyMap.insert({negativeKey, key});
     }
 
+}
+
+static auto keyCodeFromManifestName(const std::string& keyName, int& keyCode) -> bool
+{
+    static const std::unordered_map<std::string, int> keyCodes =
+    {
+        {"LEFT", SAPP_KEYCODE_LEFT},
+        {"RIGHT", SAPP_KEYCODE_RIGHT},
+        {"UP", SAPP_KEYCODE_UP},
+        {"DOWN", SAPP_KEYCODE_DOWN},
+        {"A", SAPP_KEYCODE_A},
+        {"D", SAPP_KEYCODE_D},
+        {"W", SAPP_KEYCODE_W},
+        {"S", SAPP_KEYCODE_S},
+        {"SPACE", SAPP_KEYCODE_SPACE},
+        {"ENTER", SAPP_KEYCODE_ENTER},
+        {"ESCAPE", SAPP_KEYCODE_ESCAPE},
+    };
+
+    const auto keyIt = keyCodes.find(keyName);
+    if (keyIt == keyCodes.end())
+    {
+        return false;
+    }
+
+    keyCode = keyIt->second;
+    return true;
+}
+
+void Input::loadManifest(const std::string& manifestPath)
+{
+    const auto manifestJson = ManifestLoader::loadJson(manifestPath);
+    loadManifest(manifestJson, manifestPath);
+}
+
+void Input::loadManifest(const nlohmann::json& manifestJson, const std::string& sourceName)
+{
+    getInstance();
+
+    if (!manifestJson.is_object() || !manifestJson.contains("input"))
+    {
+        return;
+    }
+
+    const auto& input = manifestJson["input"];
+    if (!input.is_object())
+    {
+        Logger::error("Input: " + sourceName + " field 'input' must be an object");
+        return;
+    }
+
+    if (input.contains("actions"))
+    {
+        if (!input["actions"].is_array())
+        {
+            Logger::error("Input: " + sourceName + " field 'input.actions' must be an array");
+        }
+        else
+        {
+            for (const auto& action : input["actions"])
+            {
+                if (!action.is_object())
+                {
+                    Logger::error("Input: " + sourceName + " has an action entry that is not an object");
+                    continue;
+                }
+
+                if (!action.contains("name") || !action["name"].is_string() || action["name"].get<std::string>().empty())
+                {
+                    Logger::error("Input: " + sourceName + " has action entry without required string field 'name'");
+                    continue;
+                }
+
+                const std::string actionName = action["name"].get<std::string>();
+                if (!action.contains("keys") || !action["keys"].is_array())
+                {
+                    Logger::error("Input: " + sourceName + " action '" + actionName + "' requires array field 'keys'");
+                    continue;
+                }
+
+                std::vector<int> keyCodes;
+                for (const auto& keyNameJson : action["keys"])
+                {
+                    if (!keyNameJson.is_string())
+                    {
+                        Logger::error("Input: " + sourceName + " action '" + actionName + "' has a non-string key entry");
+                        continue;
+                    }
+
+                    int keyCode = 0;
+                    const std::string keyName = keyNameJson.get<std::string>();
+                    if (!keyCodeFromManifestName(keyName, keyCode))
+                    {
+                        Logger::error("Input: " + sourceName + " action '" + actionName + "' has unknown key '" + keyName + "'");
+                        continue;
+                    }
+
+                    keyCodes.push_back(keyCode);
+                }
+
+                if (keyCodes.empty())
+                {
+                    Logger::error("Input: " + sourceName + " action '" + actionName + "' has no valid keys");
+                    continue;
+                }
+
+                makeAction(actionName, keyCodes);
+            }
+        }
+    }
+
+    if (input.contains("axes"))
+    {
+        if (!input["axes"].is_array())
+        {
+            Logger::error("Input: " + sourceName + " field 'input.axes' must be an array");
+        }
+        else
+        {
+            for (const auto& axis : input["axes"])
+            {
+                if (!axis.is_object())
+                {
+                    Logger::error("Input: " + sourceName + " has an axis entry that is not an object");
+                    continue;
+                }
+
+                if (!axis.contains("name") || !axis["name"].is_string() || axis["name"].get<std::string>().empty())
+                {
+                    Logger::error("Input: " + sourceName + " has axis entry without required string field 'name'");
+                    continue;
+                }
+
+                const std::string axisName = axis["name"].get<std::string>();
+                if (!axis.contains("positive") || !axis["positive"].is_string() ||
+                    !axis.contains("negative") || !axis["negative"].is_string())
+                {
+                    Logger::error("Input: " + sourceName + " axis '" + axisName + "' requires string fields 'positive' and 'negative'");
+                    continue;
+                }
+
+                int positiveKey = 0;
+                int negativeKey = 0;
+                const std::string positiveName = axis["positive"].get<std::string>();
+                const std::string negativeName = axis["negative"].get<std::string>();
+
+                if (!keyCodeFromManifestName(positiveName, positiveKey))
+                {
+                    Logger::error("Input: " + sourceName + " axis '" + axisName + "' has unknown positive key '" + positiveName + "'");
+                    continue;
+                }
+
+                if (!keyCodeFromManifestName(negativeName, negativeKey))
+                {
+                    Logger::error("Input: " + sourceName + " axis '" + axisName + "' has unknown negative key '" + negativeName + "'");
+                    continue;
+                }
+
+                makeAxis(axisName, positiveKey, negativeKey);
+            }
+        }
+    }
 }
 
 auto Input::getAxis(const std::string& name) -> float
