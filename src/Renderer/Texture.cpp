@@ -12,6 +12,7 @@
 #include "Core/Logger.hpp"
 
 #include <utility>
+#include <cstring>
 
 namespace Sprout
 {
