@@ -1,7 +1,7 @@
 os=Darwin 25.5.0 arm64
 host=Tuukkas-MacBook-Air.local
 pid=18719
-git_rev=edf41ac4f231c2686211bc4a0db0b26404d9d6f3
+git_rev=b4b04b39d261e72601919e597ce6c8b3ae408939
 branch=feat/u4-goal
 worktree=/tmp/sapling-u4
 renderer=Metal
