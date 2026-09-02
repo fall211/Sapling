@@ -225,6 +225,8 @@ auto Input::keyCodeFromName(const std::string& keyName, int& keyCode) -> bool
         {"SPACE", SAPP_KEYCODE_SPACE},
         {"ENTER", SAPP_KEYCODE_ENTER},
         {"ESCAPE", SAPP_KEYCODE_ESCAPE},
+        {"LEFT_SHIFT", SAPP_KEYCODE_LEFT_SHIFT},
+        {"SHIFT", SAPP_KEYCODE_LEFT_SHIFT},
     };
 
     const auto keyIt = keyCodes.find(keyName);

@@ -26,6 +26,13 @@ namespace Comp
         bool isMoving = false;
         bool grounded = false;
         bool jumpHeld = false;
+        float dashSpeed = 13.0f;
+        float dashTime = 0.10f;
+        float dashCooldown = 0.22f;
+        float dashCoast = 20.0f;
+        float dashLeft = 0.0f;
+        float dashCooldownLeft = 0.0f;
+        float dashDir = 1.0f;
 
         enum class Facing : uint8_t
         {
