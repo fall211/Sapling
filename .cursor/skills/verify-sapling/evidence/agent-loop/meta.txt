@@ -1,0 +1,11 @@
+feature: agent-loop
+host: Linux
+display: :7
+git_rev: b81e84c33261a8c9dd33d0bc237209b78b24d668
+techdemo_pid: 531230
+run_id: agent-loop
+ping: ok
+action: confirm press (Input, not Engine::changeScene)
+scene: title -> game
+before_sha256: 0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496
+after_sha256: 98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# control-sapling — process lifecycle + doctor for Sapling TechDemo.
-# Keyboard and pixels: use the desktop Computer tool against the window this helper started.
+# control-sapling: TechDemo lifecycle and sapling-ctl drive path.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -73,7 +72,10 @@ fmod_ok() {
 }
 
 find_ctl() {
-  for p in     "$TECHDEMO/build/Debug/sapling-ctl"     "$TECHDEMO/build/Debug/sapling-ctl.exe"     "$TECHDEMO/build/Release/sapling-ctl"
+  for p in \
+    "$TECHDEMO/build/Debug/sapling-ctl" \
+    "$TECHDEMO/build/Debug/sapling-ctl.exe" \
+    "$TECHDEMO/build/Release/sapling-ctl"
   do
     if [[ -x "$p" ]]; then
       echo "$p"
@@ -81,6 +83,30 @@ find_ctl() {
     fi
   done
   return 1
+}
+
+require_ctl() {
+  local ctl
+  ctl="$(find_ctl)" || die "sapling-ctl missing; launch a Debug TechDemo first"
+  echo "$ctl"
+}
+
+ctl_run() {
+  local ctl
+  ctl="$(require_ctl)"
+  "$ctl" "$@"
+}
+
+json_ok() {
+  python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") else 1)'
+}
+
+json_scene() {
+  python3 -c 'import json,sys; d=json.load(sys.stdin); p=d.get("payload", d); print(p.get("scene",""))'
+}
+
+png_hash() {
+  sha256sum "$1" | awk '{print $1}'
 }
 
 find_binary() {
@@ -122,6 +148,7 @@ cmd_launch() {
   echo "techdemo=$TECHDEMO"
   echo "os=$(uname -s) arch=$(uname -m)"
   echo "run_id=$RUN_ID"
+  echo "display=${DISPLAY:-unset}"
 
   [[ -d "$TECHDEMO" ]] || die "TechDemo directory missing: $TECHDEMO"
   [[ -f "$TECHDEMO/CMakeLists.txt" ]] || die "TechDemo CMakeLists.txt missing"
@@ -192,6 +219,7 @@ cmd_doctor() {
   echo "os=$(uname -s) arch=$(uname -m) family=$os"
   echo "run_id=$RUN_ID"
   echo "state_dir=$STATE_DIR"
+  echo "display=${DISPLAY:-unset}"
 
   if [[ ! -f "$REPO_ROOT/CMakeLists.txt" ]] || [[ ! -f "$TECHDEMO/Assets/manifest.json" ]]; then
     echo "FAIL: not a Sapling checkout with TechDemo manifest"
@@ -215,7 +243,7 @@ cmd_doctor() {
   done
 
   if [[ "$os" == linux ]]; then
-    echo "NOTE: Linux uses fmod_stub (no real FMOD .so)"
+    echo "NOTE: Linux Debug uses fmod_stub (no real FMOD .so)"
     linux_audio_note
   fi
 
@@ -243,12 +271,30 @@ cmd_doctor() {
       echo "FAIL: log missing Engine init completed"
       rc=1
     fi
+    if [[ -f "$STDOUT_FILE" ]] && grep -q "AgentCli listening" "$STDOUT_FILE"; then
+      echo "OK: log contains AgentCli listening"
+    else
+      echo "FAIL: log missing AgentCli listening"
+      rc=1
+    fi
+    local ctl
+    if ctl="$(find_ctl)"; then
+      if "$ctl" ping | json_ok; then
+        echo "OK: sapling-ctl ping"
+      else
+        echo "FAIL: sapling-ctl ping"
+        rc=1
+      fi
+    else
+      echo "FAIL: sapling-ctl not built"
+      rc=1
+    fi
   else
     echo "FAIL: no running instance for this run id"
     rc=1
   fi
 
-  exit "$rc"
+  return "$rc"
 }
 
 cmd_key() {
@@ -264,31 +310,25 @@ cmd_key() {
     esac
   done
   [[ -n "$key" ]] || die "usage: control-sapling key <space|w|...> or key --hold w --ms 400"
-  local ctl
-  if ctl="$(find_ctl)"; then
-    local name
-    name="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
-    case "$name" in
-      SPACE|ENTER)
-        "$ctl" action confirm press
-        ;;
-      ESCAPE|ESC)
-        "$ctl" action quit press
-        ;;
-      *)
-        if [[ "$hold" == 1 ]]; then
-          "$ctl" key "$name" down
-          sleep "$(awk "BEGIN { print ($ms == 0 ? 400 : $ms)/1000 }")"
-          "$ctl" key "$name" up
-        else
-          "$ctl" key "$name" press
-        fi
-        ;;
-    esac
-    return
-  fi
-  echo "Recorded key intent: $key"
-  echo "sapling-ctl not built. Focus Sapling TechDemo and press the key with the Computer tool (confirm is key-up)."
+  local name
+  name="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
+  case "$name" in
+    SPACE|ENTER)
+      ctl_run action confirm press
+      ;;
+    ESCAPE|ESC)
+      ctl_run action quit press
+      ;;
+    *)
+      if [[ "$hold" == 1 ]]; then
+        ctl_run key "$name" down
+        sleep "$(awk "BEGIN { print ($ms == 0 ? 400 : $ms)/1000 }")"
+        ctl_run key "$name" up
+      else
+        ctl_run key "$name" press
+      fi
+      ;;
+  esac
 }
 
 cmd_screenshot() {
@@ -304,13 +344,7 @@ cmd_screenshot() {
   load_state
   mkdir -p "$STATE_DIR"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) SCREENSHOT $path" >> "$DRIVE_FILE"
-  local ctl
-  if ctl="$(find_ctl)"; then
-    "$ctl" screenshot "$path"
-    return
-  fi
-  echo "Save a PNG of the Sapling TechDemo window to: $path"
-  echo "sapling-ctl not built. Grab pixels with the Computer tool."
+  ctl_run screenshot "$path"
 }
 
 cmd_log_grep() {
@@ -346,11 +380,136 @@ cmd_cleanup() {
   echo "evidence kept under $SKILL_DIR/evidence"
 }
 
+cmd_ctl() {
+  [[ $# -gt 0 ]] || die "usage: control-sapling ctl <sapling-ctl args>"
+  ctl_run "$@"
+}
+
+reject_unchanged() {
+  local before_hash="$1" after_hash="$2" after_scene="$3"
+  if [[ "$before_hash" == "$after_hash" ]]; then
+    echo "reject: PNG hashes identical ($before_hash)" >&2
+    return 1
+  fi
+  if [[ "$after_scene" == "title" ]]; then
+    echo "reject: state.scene is still title" >&2
+    return 1
+  fi
+  return 0
+}
+
+cmd_prove() {
+  RUN_ID="agent-loop"
+  STATE_DIR="${SAPLING_VERIFY_DIR:-/tmp/sapling-verify-$RUN_ID}"
+  STATE_FILE="$STATE_DIR/state.env"
+  STDOUT_FILE="$STATE_DIR/stdout.txt"
+  PID_FILE="$STATE_DIR/pid"
+  DRIVE_FILE="$STATE_DIR/drive.txt"
+
+  local evidence="$SKILL_DIR/evidence/agent-loop"
+  mkdir -p "$evidence"
+
+  local started=0
+  finish() {
+    if [[ -f "$STDOUT_FILE" ]]; then
+      cp "$STDOUT_FILE" "$SKILL_DIR/evidence/agent-loop/stdout.txt" 2>/dev/null || true
+    fi
+    cmd_cleanup
+  }
+  trap finish EXIT
+
+  load_state
+  if [[ -n "${SAPLING_PID:-}" ]] && kill -0 "$SAPLING_PID" 2>/dev/null; then
+    echo "prove: reuse pid $SAPLING_PID run $RUN_ID"
+  else
+    cmd_launch
+    started=1
+  fi
+  echo "prove: started_by_prove=$started display=${DISPLAY:-unset}"
+
+  for i in $(seq 1 30); do
+    if [[ -f "$STDOUT_FILE" ]] && grep -q "AgentCli listening" "$STDOUT_FILE"; then
+      break
+    fi
+    sleep 0.1
+  done
+
+  cmd_doctor || die "doctor failed"
+
+  local ping_ok=0
+  local i
+  for i in $(seq 1 30); do
+    if ctl_run ping | tee "$evidence/ping.json" | json_ok; then
+      ping_ok=1
+      break
+    fi
+    sleep 0.1
+  done
+  [[ "$ping_ok" -eq 1 ]] || die "sapling-ctl ping failed"
+
+  ctl_run state | tee "$evidence/state-before.json" | json_ok || die "state before failed"
+  ctl_run screenshot "$evidence/before.png" | tee "$evidence/screenshot-before.json" | json_ok || die "screenshot before failed"
+  [[ -s "$evidence/before.png" ]] || die "before.png missing or empty"
+
+  ctl_run action confirm press | tee "$evidence/action-confirm.json" | json_ok || die "action confirm press failed"
+  sleep 0.4
+
+  ctl_run state | tee "$evidence/state-after.json" | json_ok || die "state after failed"
+  ctl_run screenshot "$evidence/after.png" | tee "$evidence/screenshot-after.json" | json_ok || die "screenshot after failed"
+  [[ -s "$evidence/after.png" ]] || die "after.png missing or empty"
+
+  local before_scene after_scene before_hash after_hash
+  before_scene="$(json_scene < "$evidence/state-before.json")"
+  after_scene="$(json_scene < "$evidence/state-after.json")"
+  before_hash="$(png_hash "$evidence/before.png")"
+  after_hash="$(png_hash "$evidence/after.png")"
+
+  {
+    echo "before_scene=$before_scene"
+    echo "after_scene=$after_scene"
+    echo "before_sha256=$before_hash"
+    echo "after_sha256=$after_hash"
+  } | tee "$evidence/hashes.txt"
+
+  set +e
+  reject_unchanged "$before_hash" "$before_hash" "$after_scene"
+  local dry_rc=$?
+  set -e
+  if [[ "$dry_rc" -eq 0 ]]; then
+    die "fail-closed: identical hashes were not rejected"
+  fi
+  {
+    echo "dry: reject_unchanged same-hash exit=$dry_rc"
+    echo "live hashes: $before_hash vs $after_hash"
+    echo "scene: $before_scene -> $after_scene"
+  } | tee "$evidence/fail-closed.txt"
+
+  reject_unchanged "$before_hash" "$after_hash" "$after_scene" || die "PNG hashes identical or state.scene is still title"
+
+  {
+    echo "feature: agent-loop"
+    echo "host: $(uname -s)"
+    echo "display: ${DISPLAY:-unset}"
+    echo "git_rev: $(git -C "$REPO_ROOT" rev-parse HEAD)"
+    echo "techdemo_pid: ${SAPLING_PID:-}"
+    echo "run_id: $RUN_ID"
+    echo "ping: ok"
+    echo "action: confirm press (Input, not Engine::changeScene)"
+    echo "scene: $before_scene -> $after_scene"
+    echo "before_sha256: $before_hash"
+    echo "after_sha256: $after_hash"
+  } | tee "$evidence/meta.txt"
+
+  echo "prove: ok scene $before_scene -> $after_scene"
+}
+
 usage() {
   cat <<EOF
-usage: control-sapling <launch|doctor|key|screenshot|log-grep|cleanup> [args]
+usage: control-sapling <launch|doctor|ctl|prove|key|screenshot|log-grep|cleanup> [args]
   launch [--build-only] [--release]
   doctor
+  ctl <sapling-ctl args>
+  prove
   key [--hold] <name> [--ms N]
   screenshot --path <png>
   log-grep --pattern <re>
@@ -363,7 +522,9 @@ main() {
   shift || true
   case "$cmd" in
     launch) cmd_launch "$@" ;;
-    doctor) cmd_doctor "$@" ;;
+    doctor) cmd_doctor "$@"; exit $? ;;
+    ctl) cmd_ctl "$@" ;;
+    prove) cmd_prove "$@" ;;
     key) cmd_key "$@" ;;
     screenshot) cmd_screenshot "$@" ;;
     log-grep) cmd_log_grep "$@" ;;

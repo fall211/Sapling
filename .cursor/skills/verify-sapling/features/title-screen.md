@@ -15,7 +15,7 @@ The TechDemo opens on a title scene that shows `SAPLING TECH DEMO`, a floating p
 - From the arena, press Escape to return to title (does not quit).
 - From results, press Escape to return to title.
 
-## Driving it with control-sapling
+## Driving it with sapling-ctl
 
 Preconditions:
 
@@ -24,11 +24,11 @@ Preconditions:
 - Evidence directory `evidence/title-start/` exists.
 
 - **First paint.** Look at the window after launch. Run `control-sapling screenshot --path .cursor/skills/verify-sapling/evidence/title-start/before-confirm.png`. The PNG shows `SAPLING TECH DEMO` and `Press SPACE to Start` (the prompt blinks; wait up to 1s and retry once if the prompt is transparent).
-- **Start with Space.** Press and release Space. Run `control-sapling key space`. The window leaves the title copy; HUD text `Score:`, `Time:`, and `Wave` appears.
+- **Start with confirm.** Run `control-sapling ctl action confirm press`. The window leaves the title copy; HUD text `Score:`, `Time:`, and `Wave` appears. `helpers/control-sapling prove` is this step with hashes and scene checks.
 - **Proof after start.** Run `control-sapling screenshot --path .cursor/skills/verify-sapling/evidence/title-start/after-confirm.png`. The PNG is the arena, not the title.
-- **Return.** Press Escape. Run `control-sapling key escape`. Title copy returns. Screenshot `evidence/title-start/back-to-title.png`.
+- **Return.** Run `control-sapling ctl action quit press`. Title copy returns. Screenshot `evidence/title-start/back-to-title.png`.
 - **Enter alias.** From title, Run `control-sapling key Return`. Arena HUD appears again (same `confirm` action as Space).
-- **Quit.** Return to title, then Run `control-sapling key escape`. The recorded PID exits. Doctor then reports the process down. Do not treat this last step as the only proof of title; keep the start-game screenshots.
+- **Quit.** Return to title, then Run `control-sapling ctl action quit press`. The recorded PID exits. Doctor then reports the process down. Do not treat this last step as the only proof of title; keep the start-game screenshots.
 
 ## Gotchas
 
@@ -36,4 +36,4 @@ Preconditions:
 - Esc on title quits; Esc in the arena returns to title. Do not mix those proofs.
 - The prompt color toggles every 0.6s. A screenshot with an invisible prompt is not a failed title if the header `SAPLING TECH DEMO` is visible.
 - BGM starts on title enable via FMOD. Absence of a wav file on disk after play is not a bug; there is no audio dump to inspect.
-- Linux cannot reach this recipe until FMOD and Sokol GL/X11 link (see skill Launch).
+- Linux Debug launches with `fmod_stub` and X11. GLCORE framebuffer screenshots work. Metal screenshot is not this recipe.

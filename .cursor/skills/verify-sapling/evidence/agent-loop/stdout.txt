@@ -1,0 +1,8 @@
+[INFO] Engine init completed
+[INFO] AudioEngine init completed
+[INFO] AudioEngine init completed
+[INFO] Input init completed
+[INFO] Enabling scene
+[INFO] AgentCli listening on 127.0.0.1:17321
+[INFO] Disabling scene
+[INFO] Enabling scene

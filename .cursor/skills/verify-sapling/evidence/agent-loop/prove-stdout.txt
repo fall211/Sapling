@@ -1,0 +1,82 @@
+repo=/workspace/Sapling
+techdemo=/workspace/Sapling/Examples/TechDemo
+os=Linux arch=x86_64
+run_id=agent-loop
+display=:7
+==> cmake configure Debug
+CMake Warning (dev) at /usr/share/cmake-3.31/Modules/FindOpenGL.cmake:415 (message):
+  Policy CMP0072 is not set: FindOpenGL prefers GLVND by default when
+  available.  Run "cmake --help-policy CMP0072" for policy details.  Use the
+  cmake_policy command to set the policy and suppress this warning.
+
+  FindOpenGL found both a legacy GL library:
+
+    OPENGL_gl_LIBRARY: /usr/lib/x86_64-linux-gnu/libGL.so
+
+  and GLVND libraries for OpenGL and GLX:
+
+    OPENGL_opengl_LIBRARY: /usr/lib/x86_64-linux-gnu/libOpenGL.so
+    OPENGL_glx_LIBRARY: /usr/lib/x86_64-linux-gnu/libGLX.so
+
+  OpenGL_GL_PREFERENCE has not been set to "GLVND" or "LEGACY", so for
+  compatibility with CMake 3.10 and below the legacy GL library will be used.
+Call Stack (most recent call first):
+  CMakeLists.txt:96 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Debug build - ASSETS_PATH set to: /workspace/Sapling/Examples/TechDemo/Assets/
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /workspace/Sapling/Examples/TechDemo/build/Debug
+==> cmake build
+[  8%] Built target sapling-ctl
+[ 80%] Built target SaplingEngine
+[100%] Built target TechDemo
+binary=/workspace/Sapling/Examples/TechDemo/build/Debug/TechDemo
+==> starting /workspace/Sapling/Examples/TechDemo/build/Debug/TechDemo
+ready pid=531230
+prove: started_by_prove=1 display=:7
+control-sapling doctor
+repo=/workspace/Sapling
+os=Linux arch=x86_64 family=linux
+run_id=agent-loop
+state_dir=/tmp/sapling-verify-agent-loop
+display=:7
+OK: Sapling + TechDemo manifest
+OK: asset manifest.json
+OK: asset player.png
+OK: asset bgm.wav
+OK: asset game_font.ttf
+NOTE: Linux Debug uses fmod_stub (no real FMOD .so)
+Linux Debug links a header-only FMOD stub (third_party/fmod_stub) plus X11/Xi/Xcursor/OpenGL.
+Audio is silent. Framebuffer screenshots work via sapling-ctl on GLCORE.
+OK: FMOD libraries or stub for linux
+OK: binary /workspace/Sapling/Examples/TechDemo/build/Debug/TechDemo
+OK: pid 531230 alive
+OK: log contains Engine init completed
+OK: log contains AgentCli listening
+OK: sapling-ctl ping
+before_scene=title
+after_scene=game
+before_sha256=0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496
+after_sha256=98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab
+reject: PNG hashes identical (0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496)
+dry: reject_unchanged same-hash exit=1
+live hashes: 0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496 vs 98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab
+scene: title -> game
+feature: agent-loop
+host: Linux
+display: :7
+git_rev: b81e84c33261a8c9dd33d0bc237209b78b24d668
+techdemo_pid: 531230
+run_id: agent-loop
+ping: ok
+action: confirm press (Input, not Engine::changeScene)
+scene: title -> game
+before_sha256: 0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496
+after_sha256: 98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab
+prove: ok scene title -> game
+stopping pid 531230
+scratch removed: /tmp/sapling-verify-agent-loop
+evidence kept under /workspace/Sapling/.cursor/skills/verify-sapling/evidence
+EXIT:0

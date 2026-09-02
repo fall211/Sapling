@@ -1,0 +1,4 @@
+before_scene=title
+after_scene=game
+before_sha256=0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496
+after_sha256=98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab

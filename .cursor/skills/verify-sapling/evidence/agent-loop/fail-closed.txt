@@ -1,0 +1,3 @@
+dry: reject_unchanged same-hash exit=1
+live hashes: 0dfce34ba8bf83f22355f906732799531545a0548fd043c01ea7cce9e2435496 vs 98d34cb5a69d535b5b57a5b25a0d40796a3887536ae045024d8ccb098ec0e5ab
+scene: title -> game

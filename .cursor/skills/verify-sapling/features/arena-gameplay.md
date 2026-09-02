@@ -14,17 +14,17 @@ Gameplay is a top-down collector: a player sprite in a tiled arena, spinning gem
 - From the title, press Space or Enter.
 - From results, press Space to play again (resets the arena).
 
-## Driving it with control-sapling
+## Driving it with sapling-ctl
 
 Preconditions:
 
 - Healthy TechDemo PID on the title scene.
 - `control-sapling doctor` is clean.
 
-- **Enter arena.** Run `control-sapling key space`. Screenshot `evidence/arena-gameplay/hud.png`. HUD includes `Score: 0`, a `Time:` value near 60, and `Wave 1`.
+- **Enter arena.** Run `control-sapling ctl action confirm press`. Screenshot `evidence/arena-gameplay/hud.png`. HUD includes `Score: 0`, a `Time:` value near 60, and `Wave 1`.
 - **Move.** Hold W then D. Run `control-sapling key --hold w --ms 400` and `control-sapling key --hold d --ms 400`. The player sprite leaves center; capture `evidence/arena-gameplay/moved.png` and compare to `hud.png`.
 - **Collect (best effort).** Keep walking toward visible gems with WASD holds. When `Gems:` or `Score:` on the HUD increases, screenshot `evidence/arena-gameplay/scored.png`. If no gem is reached in ~10s, record that miss; do not poke collectible components.
-- **Esc to title.** Run `control-sapling key escape`. Window shows `SAPLING TECH DEMO` again; PID still alive. Screenshot `evidence/arena-gameplay/esc-title.png`.
+- **Esc to title.** Run `control-sapling ctl action quit press`. Window shows `SAPLING TECH DEMO` again; PID still alive. Screenshot `evidence/arena-gameplay/esc-title.png`.
 
 ## Gotchas
 
