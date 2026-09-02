@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "scene": "title",
+  "frame": 2720,
+  "entity_count": 10,
+  "scenes": [
+    "score",
+    "game",
+    "title"
+  ]
+}

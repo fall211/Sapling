@@ -46,14 +46,10 @@ os_family() {
   esac
 }
 
-linux_block_text() {
+linux_audio_note() {
   cat <<'TXT'
-Linux is not a first-class Sapling TechDemo host in this checkout.
-CMake only links FMOD for APPLE (dylibs) and WIN32 (fmod_vc.lib + DLLs); there is no UNIX branch.
-third_party/fmod has no libfmod.so / libfmodstudio.so (mac dylibs + Windows DLLs/libs only).
-Sprout.cpp uses SOKOL_GLCORE on Linux, but CMake does not link X11, Xi, Xcursor, Xkb, or OpenGL.
-libstdc++ also errors in src/Renderer/Texture.cpp (std::memcpy without <cstring>).
-Do not stub FMOD or invent GL/X11 link lines for verification. Use macOS or Windows.
+Linux Debug links a header-only FMOD stub (third_party/fmod_stub) plus X11/Xi/Xcursor/OpenGL.
+Audio is silent. Framebuffer screenshots work via sapling-ctl on GLCORE.
 TXT
 }
 
@@ -67,10 +63,24 @@ fmod_ok() {
     windows)
       [[ -f "$FMOD_ROOT/core/lib/x64/fmod.dll" || -f "$FMOD_ROOT/core/lib/x86/fmod.dll" ]]
       ;;
+    linux)
+      [[ -f "$REPO_ROOT/third_party/fmod_stub/fmod.hpp" ]]
+      ;;
     *)
       return 1
       ;;
   esac
+}
+
+find_ctl() {
+  for p in     "$TECHDEMO/build/Debug/sapling-ctl"     "$TECHDEMO/build/Debug/sapling-ctl.exe"     "$TECHDEMO/build/Release/sapling-ctl"
+  do
+    if [[ -x "$p" ]]; then
+      echo "$p"
+      return
+    fi
+  done
+  return 1
 }
 
 find_binary() {
@@ -122,25 +132,6 @@ cmd_launch() {
   fi
   if [[ ! -f "$TECHDEMO/Assets/Fonts/game_font.ttf" ]]; then
     die "Assets/Fonts/game_font.ttf missing"
-  fi
-
-  local os
-  os="$(os_family)"
-  if [[ "$os" == linux ]]; then
-    linux_block_text | tee -a "$STDOUT_FILE"
-    echo "==> cmake configure+build (expected to fail on Linux)" | tee -a "$STDOUT_FILE"
-    if command -v cmake >/dev/null 2>&1; then
-      cmake -B "$TECHDEMO/build/$build_type" -DCMAKE_BUILD_TYPE="$build_type" -S "$TECHDEMO" >>"$STDOUT_FILE" 2>&1 || true
-      set +e
-      cmake --build "$TECHDEMO/build/$build_type" --parallel "$(nproc 2>/dev/null || echo 4)" >>"$STDOUT_FILE" 2>&1
-      local rc=$?
-      set -e
-      echo "cmake --build exit=$rc" | tee -a "$STDOUT_FILE"
-    else
-      echo "cmake not installed" | tee -a "$STDOUT_FILE"
-    fi
-    save_state
-    blocked "cannot start TechDemo on Linux (FMOD + Sokol GL/X11 not linked). See $STDOUT_FILE"
   fi
 
   if ! fmod_ok; then
@@ -224,20 +215,12 @@ cmd_doctor() {
   done
 
   if [[ "$os" == linux ]]; then
-    echo "FAIL: Linux launch is blocked"
-    linux_block_text
-    echo "OK: confirmed interview of CMake APPLE/WIN32-only FMOD link"
-    load_state
-    if [[ -n "${SAPLING_PID:-}" ]] && kill -0 "$SAPLING_PID" 2>/dev/null; then
-      echo "OK: recorded PID $SAPLING_PID is alive"
-    else
-      echo "FAIL: no healthy TechDemo PID (expected on Linux)"
-    fi
-    exit 2
+    echo "NOTE: Linux uses fmod_stub (no real FMOD .so)"
+    linux_audio_note
   fi
 
   if fmod_ok; then
-    echo "OK: FMOD libraries for $os"
+    echo "OK: FMOD libraries or stub for $os"
   else
     echo "FAIL: FMOD libraries missing for $os under $FMOD_ROOT"
     rc=1
@@ -272,11 +255,40 @@ cmd_key() {
   load_state
   mkdir -p "$STATE_DIR"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) KEY $*" >> "$DRIVE_FILE"
-  if [[ "$(os_family)" == linux ]]; then
-    blocked "no TechDemo window on Linux; do not inject keys. Logged intent to $DRIVE_FILE"
+  local hold=0 ms=0 key=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --hold) hold=1; key="$2"; shift 2 ;;
+      --ms) ms="$2"; shift 2 ;;
+      *) key="$1"; shift ;;
+    esac
+  done
+  [[ -n "$key" ]] || die "usage: control-sapling key <space|w|...> or key --hold w --ms 400"
+  local ctl
+  if ctl="$(find_ctl)"; then
+    local name
+    name="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
+    case "$name" in
+      SPACE|ENTER)
+        "$ctl" action confirm press
+        ;;
+      ESCAPE|ESC)
+        "$ctl" action quit press
+        ;;
+      *)
+        if [[ "$hold" == 1 ]]; then
+          "$ctl" key "$name" down
+          sleep "$(awk "BEGIN { print ($ms == 0 ? 400 : $ms)/1000 }")"
+          "$ctl" key "$name" up
+        else
+          "$ctl" key "$name" press
+        fi
+        ;;
+    esac
+    return
   fi
-  echo "Recorded key intent: $*"
-  echo "Focus the window titled Sapling TechDemo (PID ${SAPLING_PID:-unknown}) with the desktop Computer tool and press that key (confirm is key-up)."
+  echo "Recorded key intent: $key"
+  echo "sapling-ctl not built. Focus Sapling TechDemo and press the key with the Computer tool (confirm is key-up)."
 }
 
 cmd_screenshot() {
@@ -292,11 +304,13 @@ cmd_screenshot() {
   load_state
   mkdir -p "$STATE_DIR"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) SCREENSHOT $path" >> "$DRIVE_FILE"
-  if [[ "$(os_family)" == linux ]]; then
-    blocked "no TechDemo window on Linux. Capture via Computer tool only if a window exists. Intent logged to $DRIVE_FILE"
+  local ctl
+  if ctl="$(find_ctl)"; then
+    "$ctl" screenshot "$path"
+    return
   fi
   echo "Save a PNG of the Sapling TechDemo window to: $path"
-  echo "Use the desktop Computer tool; this helper does not grab pixels."
+  echo "sapling-ctl not built. Grab pixels with the Computer tool."
 }
 
 cmd_log_grep() {
