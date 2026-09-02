@@ -14,6 +14,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include <unordered_set>
 
 #include <nlohmann/json_fwd.hpp>
 
@@ -52,6 +53,7 @@ class Input
         ActionsMap m_actionsMap;
         AxisMap m_axisMap;
         KeyMap m_keyMap;
+        std::unordered_set<int> m_injectedKeys;
         
         glm::vec2 m_mousePosition;
         

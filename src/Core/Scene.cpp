@@ -170,6 +170,7 @@ void Scene::sRender(EntityList& entities)
                     pos = glm::vec2(cTransform.position) + cText.transformOffset;
                     pivot = cTransform.pivot;
                     worldSpace = !cTransform.screenSpace;
+                    scale *= cTransform.scale.x;
                 }
 
                 m_engine.getWindow().draw_text(cText.text, AssetManager::getFont(cText.font), pos, depth, cText.color, scale, pivot, worldSpace, cText.justify);
