@@ -46,6 +46,7 @@ public:
     void spawnPlayer();
     void spawnGem(float x, float y);
     void spawnEnemy();
+    void spawnExit();
     void spawnHUD();
     void updateHUD();
     void resetGame();

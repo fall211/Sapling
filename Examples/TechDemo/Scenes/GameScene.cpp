@@ -11,6 +11,8 @@
 #include "Renderer/Sprout.hpp"
 #include "Utility/Color.hpp"
 
+#include "glm/geometric.hpp"
+
 #include <string>
 
 GameScene::GameScene(Engine& engine) : Scene(engine)
@@ -37,8 +39,9 @@ void GameScene::resetGame()
     spawnPlayer();
     spawnGem(4.0f, 9.15f);
     spawnGem(9.0f, 8.15f);
-    spawnGem(16.0f, 7.15f);
+    spawnGem(15.2f, 7.15f);
     spawnEnemy();
+    spawnExit();
     spawnHUD();
 }
 
@@ -58,9 +61,11 @@ void GameScene::update()
 
     bool hit = System::CheckEnemyPlayerCollision(m_entityManager, dt);
     bool pit = false;
+    glm::vec2 playerPos(0.0f);
     auto& players = m_entityManager->getEntities("player");
     if (!players.empty() && players.front()->hasComponent<Comp::Transform>())
     {
+        playerPos = glm::vec2(players.front()->getComponent<Comp::Transform>().position);
         pit = players.front()->getComponent<Comp::Transform>().position.y > PIT_Y;
     }
     if (hit || pit)
@@ -72,6 +77,29 @@ void GameScene::update()
             m_engine.changeScene("title");
         }
         return;
+    }
+
+    auto& exits = m_entityManager->getEntities("exit");
+    if (!exits.empty() && exits.front()->hasComponent<Comp::Transform>())
+    {
+        glm::vec2 exitPos = glm::vec2(exits.front()->getComponent<Comp::Transform>().position);
+        if (glm::distance(playerPos, exitPos) < 0.7f)
+        {
+            if (m_gemsCollected >= 3)
+            {
+                AudioEngine::playSound("scene_change");
+                m_engine.changeScene("score");
+                sRender(m_entityManager->getEntities());
+                return;
+            }
+            updateHUD();
+            auto& hints = m_entityManager->getEntities("hint");
+            if (!hints.empty() && hints.front()->hasComponent<Comp::Text>())
+            {
+                hints.front()->getComponent<Comp::Text>().text = "Need 3 gems";
+                hints.front()->getComponent<Comp::Text>().color = Color::Gold;
+            }
+        }
     }
 
     if (Input::isActionUp("quit"))
@@ -130,7 +158,7 @@ void GameScene::spawnArena()
 
     spawnPlatform(1, 5, 10);
     spawnPlatform(7, 11, 9);
-    spawnPlatform(14, 18, 8);
+    spawnPlatform(12, 18, 8);
 }
 
 void GameScene::spawnPlayer()
@@ -168,11 +196,22 @@ void GameScene::spawnEnemy()
 {
     auto enemy = m_entityManager->addEntity({"enemy"});
     enemy->setName("enemy");
-    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(16.0f, 7.625f));
+    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(1.55f, 9.625f));
     transform.pivot = Sprout::Pivot::CENTER;
     auto& sprite = enemy->addComponent<Comp::Sprite>(AssetManager::getTexture("enemy_walk"), 5.0f);
     sprite.setLayer(Comp::Layer::Midground);
-    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 1.2f, 1.5f);
+    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 0.6f, 0.35f);
+}
+
+void GameScene::spawnExit()
+{
+    auto exit = m_entityManager->addEntity({"exit"});
+    exit->setName("exit");
+    auto& transform = exit->addComponent<Comp::Transform>(glm::vec2(17.6f, 7.15f));
+    transform.pivot = Sprout::Pivot::CENTER;
+    transform.scale = glm::vec3(1.25f, 1.25f, 1.0f);
+    auto& sprite = exit->addComponent<Comp::Sprite>(AssetManager::getTexture("heart"));
+    sprite.setLayer(Comp::Layer::Player);
 }
 
 void GameScene::spawnHUD()
@@ -180,7 +219,7 @@ void GameScene::spawnHUD()
     auto hint = m_entityManager->addEntity({"hud", "hint"});
     hint->addComponent<Comp::Transform>(glm::vec2(0, 24), Sprout::Pivot::TOP_CENTER, true);
     hint->addComponent<Comp::Text>(
-        "A/D walk   SPACE jump",
+        "A/D walk   SPACE jump   heart = exit",
         "game_font", 12, Color::White,
         Sprout::TextJustify::CENTER
     );

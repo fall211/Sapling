@@ -83,7 +83,7 @@ cmake --build build/Debug
 
 ## Gameplay
 
-- Walk with A/D. Space jumps. Collect three gems. Hitting the enemy or the pit retries the course.
+- Walk with A/D. Space jumps. Collect three gems, then touch the heart on the far ledge to win.
 - Each gem is worth 10, 20, or 50 points
 - Avoid red enemies — they take away health on contact
 - New enemy waves spawn every 20 seconds, increasing difficulty

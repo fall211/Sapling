@@ -1,0 +1,8 @@
+os=Darwin 25.5.0 arm64
+host=Tuukkas-MacBook-Air.local
+pid=18719
+git_rev=edf41ac4f231c2686211bc4a0db0b26404d9d6f3
+branch=feat/u4-goal
+worktree=/tmp/sapling-u4
+renderer=Metal
+notes=doctor+ping+confirm then collect 3 gems and touch heart. Far ledge moved 14-18 → 12-18 so the +1 height gap is one tile (same as start→mid). Last gem sits on the path to the heart so <3 at marker was skipped, not cheated. Enemy contact not driven. feat/u3-loop untouched.
