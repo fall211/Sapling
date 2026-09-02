@@ -30,6 +30,7 @@ private:
 
     System::ArenaBounds m_bounds;
     int m_gemsCollected = 0;
+    float m_failTimer = 0.0f;
 
 public:
     GameScene(Engine& engine);
@@ -46,9 +47,11 @@ public:
     void spawnPlayer();
     void spawnGem(float x, float y);
     void spawnEnemy();
+    void spawnExit();
     void spawnHUD();
     void updateHUD();
     void resetGame();
+    void beginFail(const char* banner, float seconds);
 
     bool onMessage(const SceneMessage& message) override;
 };

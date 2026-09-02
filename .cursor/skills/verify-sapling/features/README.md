@@ -41,3 +41,4 @@ Each feature file starts with an H1 and one paragraph, then exactly four H2s: `S
 - [Side-view jump feel](./u1-jump-feel.md) covers grounded idle, A/D walk, Space jump, coyote/variable height.
 - [One-screen course](./u2-course.md) covers raised platforms, a jump gap, and no survival timer.
 - [Collect-and-retry loop](./u3-loop.md) covers three gems, one enemy, and pit/enemy retry.
+- [Finish tape](./u4-goal.md) covers the heart exit and YOU WON.
