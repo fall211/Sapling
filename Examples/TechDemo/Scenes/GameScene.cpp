@@ -235,11 +235,12 @@ void GameScene::spawnExit()
     sprite.setLayer(Comp::Layer::Player);
 
     auto label = m_entityManager->addEntity({"exit", "exit_label"});
-    auto& lt = label->addComponent<Comp::Transform>(glm::vec2(16.7f, 7.50f));
+    auto& lt = label->addComponent<Comp::Transform>(glm::vec2(17.6f, 7.62f));
     lt.pivot = Sprout::Pivot::CENTER;
+    lt.scale = glm::vec3(0.18f, 0.18f, 1.0f);
     label->addComponent<Comp::Text>(
         "EXIT",
-        "game_font", 2, Color::White,
+        "game_font", 1, Color::White,
         Sprout::TextJustify::CENTER
     );
 }
