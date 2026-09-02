@@ -14,17 +14,17 @@ When the 60-second timer hits zero or health reaches zero, the arena shows a gam
 - Play until time expires (60s) or lose three hearts, then press Space.
 - There is no menu item that jumps here.
 
-## Driving it with control-sapling
+## Driving it with sapling-ctl
 
 Preconditions:
 
 - Healthy TechDemo PID.
 - Prefer a Debug build so `[DEBUG]` game-over lines appear.
 
-- **Reach game-over.** From title, Run `control-sapling key space`. Either wait until `Time:` reads `0` (about 60s) or collide with enemies until hearts are gone. Grep with `control-sapling log-grep --pattern "Game over"`. Screenshot `evidence/results-screen/gameover.png` while still on the arena overlay.
-- **Open results.** Run `control-sapling key space`. Screenshot `evidence/results-screen/results.png`. The PNG shows `RESULTS` and `Your Score`.
-- **Replay.** Run `control-sapling key space`. HUD `Score: 0` / `Wave 1` returns. Screenshot `evidence/results-screen/replay.png`.
-- **Esc from results.** Get back to results (timeout or death + Space), then Run `control-sapling key escape`. Title `SAPLING TECH DEMO` returns. Screenshot `evidence/results-screen/esc-title.png`.
+- **Reach game-over.** From title, Run `control-sapling ctl action confirm press`. Either wait until `Time:` reads `0` (about 60s) or collide with enemies until hearts are gone. Grep with `control-sapling log-grep --pattern "Game over"`. Screenshot `evidence/results-screen/gameover.png` while still on the arena overlay.
+- **Open results.** Run `control-sapling ctl action confirm press`. Screenshot `evidence/results-screen/results.png`. The PNG shows `RESULTS` and `Your Score`.
+- **Replay.** Run `control-sapling ctl action confirm press`. HUD `Score: 0` / `Wave 1` returns. Screenshot `evidence/results-screen/replay.png`.
+- **Esc from results.** Get back to results (timeout or death + Space), then Run `control-sapling ctl action quit press`. Title `SAPLING TECH DEMO` returns. Screenshot `evidence/results-screen/esc-title.png`.
 
 ## Gotchas
 
