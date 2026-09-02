@@ -37,6 +37,7 @@ namespace Comp
         float wallJumpSpeed = 11.0f;
         float wallDir = 0.0f;
         bool onWall = false;
+        float wallJumpLock = 0.0f;
 
         enum class Facing : uint8_t
         {

@@ -98,6 +98,10 @@ namespace System
             {
                 controller.dashCooldownLeft = std::max(0.0f, controller.dashCooldownLeft - step);
             }
+            if (controller.wallJumpLock > 0.0f)
+            {
+                controller.wallJumpLock = std::max(0.0f, controller.wallJumpLock - step);
+            }
 
             if (Input::isActionDown("dash") && controller.dashLeft <= 0.0f && controller.dashCooldownLeft <= 0.0f)
             {
@@ -160,14 +164,15 @@ namespace System
             const bool jumpPressed = Input::isActionDown("jump") || (jumpDown && !controller.jumpHeld);
             if (jumpPressed && controller.onWall)
             {
-                const float away = -controller.wallDir;
+                const float face = controller.facing == Comp::PlayerController::Facing::LEFT ? -1.0f : 1.0f;
                 const float carry = std::max(std::abs(transform.velocity.x), controller.wallJumpSpeed);
-                transform.velocity.x = away * carry;
+                transform.velocity.x = face * carry;
                 transform.velocity.y = -controller.jumpSpeed;
                 controller.onWall = false;
                 controller.grounded = false;
                 controller.coyoteLeft = 0.0f;
                 controller.dashLeft = 0.0f;
+                controller.wallJumpLock = 0.18f;
             }
             else if (jumpPressed && (controller.grounded || controller.coyoteLeft > 0.0f))
             {
@@ -194,24 +199,27 @@ namespace System
             const float py = transform.position.y - halfH;
             controller.onWall = false;
             controller.wallDir = 0.0f;
-            for (const auto& s : walls)
+            if (controller.wallJumpLock <= 0.0f)
             {
-                if (!overlapX(px, halfW * 2.0f, s.x, s.w))
-                    continue;
-                if (!overlapY(py + 0.05f, halfH * 2.0f - 0.05f, s.y, s.h))
-                    continue;
-                const float tileMid = s.x + s.w * 0.5f;
-                if (transform.position.x < tileMid)
+                for (const auto& s : walls)
                 {
-                    transform.position.x = s.x - halfW;
-                    controller.onWall = true;
-                    controller.wallDir = 1.0f;
-                }
-                else
-                {
-                    transform.position.x = s.x + s.w + halfW;
-                    controller.onWall = true;
-                    controller.wallDir = -1.0f;
+                    if (!overlapX(px, halfW * 2.0f, s.x, s.w))
+                        continue;
+                    if (!overlapY(py + 0.05f, halfH * 2.0f - 0.05f, s.y, s.h))
+                        continue;
+                    const float tileMid = s.x + s.w * 0.5f;
+                    if (transform.position.x < tileMid)
+                    {
+                        transform.position.x = s.x - halfW;
+                        controller.onWall = true;
+                        controller.wallDir = 1.0f;
+                    }
+                    else
+                    {
+                        transform.position.x = s.x + s.w + halfW;
+                        controller.onWall = true;
+                        controller.wallDir = -1.0f;
+                    }
                 }
             }
 
@@ -256,7 +264,7 @@ namespace System
             transform.position.y = std::max(bounds.minY + halfH, std::min(bounds.maxY + 2.0f, transform.position.y));
 
             bool wasMoving = controller.isMoving;
-            controller.isMoving = (moveX != 0.0f) && controller.grounded;
+            controller.isMoving = ((moveX != 0.0f) && controller.grounded) || climbing;
 
             if (moveX != 0.0f)
             {
