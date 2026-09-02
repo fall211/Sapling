@@ -67,7 +67,7 @@ namespace System
             return out;
         };
         const auto walls = collect("wall");
-        const auto solids = collect("solid");
+        const auto floors = collect("platform");
 
         auto& players = entityManager->getEntities("player");
 
@@ -120,13 +120,16 @@ namespace System
             else if (moveX != 0.0f)
             {
                 const float walkVx = moveX * controller.moveSpeed;
-                if (walkVx > 0.0f)
+                if (transform.velocity.x * walkVx >= 0.0f)
                 {
-                    transform.velocity.x = std::max(transform.velocity.x, walkVx);
-                }
-                else
-                {
-                    transform.velocity.x = std::min(transform.velocity.x, walkVx);
+                    if (walkVx > 0.0f)
+                    {
+                        transform.velocity.x = std::max(transform.velocity.x, walkVx);
+                    }
+                    else
+                    {
+                        transform.velocity.x = std::min(transform.velocity.x, walkVx);
+                    }
                 }
             }
             else
@@ -152,8 +155,21 @@ namespace System
             }
 
             const bool jumpDown = Input::isAction("jump");
-            const bool canJump = controller.grounded || controller.coyoteLeft > 0.0f;
-            if (jumpDown && !controller.jumpHeld && canJump)
+            const bool holdingWall = controller.onWall && controller.wallDir != 0.0f
+                && moveX == controller.wallDir;
+            const bool jumpPressed = Input::isActionDown("jump") || (jumpDown && !controller.jumpHeld);
+            if (jumpPressed && controller.onWall)
+            {
+                const float away = -controller.wallDir;
+                const float carry = std::max(std::abs(transform.velocity.x), controller.wallJumpSpeed);
+                transform.velocity.x = away * carry;
+                transform.velocity.y = -controller.jumpSpeed;
+                controller.onWall = false;
+                controller.grounded = false;
+                controller.coyoteLeft = 0.0f;
+                controller.dashLeft = 0.0f;
+            }
+            else if (jumpPressed && (controller.grounded || controller.coyoteLeft > 0.0f))
             {
                 transform.velocity.y = -controller.jumpSpeed;
                 controller.grounded = false;
@@ -161,16 +177,23 @@ namespace System
             }
             controller.jumpHeld = jumpDown;
 
-            if (!jumpDown && transform.velocity.y < 0.0f)
+            if (!jumpDown && transform.velocity.y < 0.0f && !holdingWall)
             {
                 transform.velocity.y *= controller.jumpCut;
             }
 
             transform.velocity.y += controller.gravity * step;
+            if (holdingWall && !jumpPressed)
+            {
+                transform.velocity.y = -controller.climbSpeed;
+                controller.grounded = false;
+            }
 
             transform.position.x += transform.velocity.x * dt;
             const float px = transform.position.x - halfW;
             const float py = transform.position.y - halfH;
+            controller.onWall = false;
+            controller.wallDir = 0.0f;
             for (const auto& s : walls)
             {
                 if (!overlapX(px, halfW * 2.0f, s.x, s.w))
@@ -181,21 +204,27 @@ namespace System
                 if (transform.position.x < tileMid)
                 {
                     transform.position.x = s.x - halfW;
+                    controller.onWall = true;
+                    controller.wallDir = 1.0f;
                 }
                 else
                 {
                     transform.position.x = s.x + s.w + halfW;
+                    controller.onWall = true;
+                    controller.wallDir = -1.0f;
                 }
             }
 
             transform.position.y += transform.velocity.y * step;
+            const bool climbing = controller.onWall && moveX == controller.wallDir && controller.wallDir != 0.0f;
             controller.grounded = false;
+            if (!climbing)
             {
                 const float px2 = transform.position.x - halfW;
                 const float feet = transform.position.y + halfH;
                 if (transform.velocity.y >= 0.0f)
                 {
-                    for (const auto& s : solids)
+                    for (const auto& s : floors)
                     {
                         if (!overlapX(px2 + 0.04f, halfW * 2.0f - 0.08f, s.x, s.w))
                             continue;
