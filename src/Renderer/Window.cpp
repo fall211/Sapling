@@ -28,7 +28,12 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 
-#if !defined(__APPLE__) && !defined(_WIN32)
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <d3d11.h>
+#elif !defined(__APPLE__)
 #include <GL/gl.h>
 #endif
 
@@ -256,43 +261,200 @@ namespace Sprout
         m_post_frame_callback = std::move(callback);
     }
 
+    namespace
+    {
+#if defined(_WIN32)
+        void swizzleBgraToRgba(unsigned char* pixels, size_t count)
+        {
+            for (size_t i = 0; i < count; ++i)
+            {
+                unsigned char b = pixels[0];
+                pixels[0] = pixels[2];
+                pixels[2] = b;
+                pixels += 4;
+            }
+        }
+
+        auto captureD3d11Swapchain(int& width, int& height, std::vector<unsigned char>& rgba, std::string& error) -> bool
+        {
+            auto* device = static_cast<ID3D11Device*>(const_cast<void*>(sapp_d3d11_get_device()));
+            auto* ctx = static_cast<ID3D11DeviceContext*>(const_cast<void*>(sapp_d3d11_get_device_context()));
+            auto* resolveView = static_cast<ID3D11RenderTargetView*>(const_cast<void*>(sapp_d3d11_get_resolve_view()));
+            auto* renderView = static_cast<ID3D11RenderTargetView*>(const_cast<void*>(sapp_d3d11_get_render_view()));
+            ID3D11RenderTargetView* rtv = resolveView ? resolveView : renderView;
+            if (!device || !ctx || !rtv)
+            {
+                error = "D3D11 swapchain not ready";
+                return false;
+            }
+
+            ID3D11Resource* resource = nullptr;
+            rtv->GetResource(&resource);
+            if (!resource)
+            {
+                error = "D3D11 GetResource failed";
+                return false;
+            }
+
+            ID3D11Texture2D* src = nullptr;
+            HRESULT hr = resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&src));
+            resource->Release();
+            if (FAILED(hr) || !src)
+            {
+                error = "D3D11 source is not a Texture2D";
+                return false;
+            }
+
+            D3D11_TEXTURE2D_DESC desc{};
+            src->GetDesc(&desc);
+            width = static_cast<int>(desc.Width);
+            height = static_cast<int>(desc.Height);
+            if (width <= 0 || height <= 0)
+            {
+                src->Release();
+                error = "no framebuffer yet";
+                return false;
+            }
+
+            ID3D11Texture2D* resolved = src;
+            ID3D11Texture2D* resolvedOwned = nullptr;
+            if (desc.SampleDesc.Count > 1)
+            {
+                D3D11_TEXTURE2D_DESC resolvedDesc = desc;
+                resolvedDesc.SampleDesc.Count = 1;
+                resolvedDesc.SampleDesc.Quality = 0;
+                resolvedDesc.Usage = D3D11_USAGE_DEFAULT;
+                resolvedDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+                resolvedDesc.CPUAccessFlags = 0;
+                hr = device->CreateTexture2D(&resolvedDesc, nullptr, &resolvedOwned);
+                if (FAILED(hr) || !resolvedOwned)
+                {
+                    src->Release();
+                    error = "D3D11 resolve texture create failed";
+                    return false;
+                }
+                ctx->ResolveSubresource(resolvedOwned, 0, src, 0, desc.Format);
+                resolved = resolvedOwned;
+            }
+
+            D3D11_TEXTURE2D_DESC stagingDesc{};
+            resolved->GetDesc(&stagingDesc);
+            stagingDesc.Usage = D3D11_USAGE_STAGING;
+            stagingDesc.BindFlags = 0;
+            stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            stagingDesc.MiscFlags = 0;
+            stagingDesc.MipLevels = 1;
+            stagingDesc.ArraySize = 1;
+            stagingDesc.SampleDesc.Count = 1;
+            stagingDesc.SampleDesc.Quality = 0;
+
+            ID3D11Texture2D* staging = nullptr;
+            hr = device->CreateTexture2D(&stagingDesc, nullptr, &staging);
+            if (FAILED(hr) || !staging)
+            {
+                src->Release();
+                if (resolvedOwned)
+                {
+                    resolvedOwned->Release();
+                }
+                error = "D3D11 staging texture create failed";
+                return false;
+            }
+
+            ctx->CopyResource(staging, resolved);
+
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            hr = ctx->Map(staging, 0, D3D11_MAP_READ, 0, &mapped);
+            if (FAILED(hr))
+            {
+                staging->Release();
+                src->Release();
+                if (resolvedOwned)
+                {
+                    resolvedOwned->Release();
+                }
+                error = "D3D11 Map failed";
+                return false;
+            }
+
+            rgba.resize(static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
+            const int packedStride = width * 4;
+            for (int y = 0; y < height; ++y)
+            {
+                const auto* row = static_cast<const unsigned char*>(mapped.pData)
+                    + static_cast<size_t>(y) * mapped.RowPitch;
+                std::memcpy(rgba.data() + static_cast<size_t>(y) * packedStride,
+                            row,
+                            static_cast<size_t>(packedStride));
+            }
+            ctx->Unmap(staging, 0);
+
+            staging->Release();
+            src->Release();
+            if (resolvedOwned)
+            {
+                resolvedOwned->Release();
+            }
+
+            if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
+            {
+                swizzleBgraToRgba(rgba.data(), static_cast<size_t>(width) * static_cast<size_t>(height));
+            }
+            return true;
+        }
+#endif
+
+        auto readSwapchainRgba(int& width, int& height, std::vector<unsigned char>& rgba, std::string& error) -> bool
+        {
+#if defined(__APPLE__)
+            return captureMetalSwapchain(width, height, rgba, error);
+#elif defined(_WIN32)
+            return captureD3d11Swapchain(width, height, rgba, error);
+#else
+            width = sapp_width();
+            height = sapp_height();
+            if (width <= 0 || height <= 0)
+            {
+                error = "no framebuffer yet";
+                return false;
+            }
+            std::vector<unsigned char> pixels(static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
+            glReadBuffer(GL_BACK);
+            glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+            const GLenum glError = glGetError();
+            if (glError != GL_NO_ERROR)
+            {
+                error = "glReadPixels failed";
+                return false;
+            }
+            const int stride = width * 4;
+            rgba.resize(pixels.size());
+            for (int y = 0; y < height; ++y)
+            {
+                std::memcpy(rgba.data() + static_cast<size_t>(y) * stride,
+                            pixels.data() + static_cast<size_t>(height - 1 - y) * stride,
+                            static_cast<size_t>(stride));
+            }
+            return true;
+#endif
+        }
+    }
+
     auto Window::captureFramebufferPng(const std::string& path, std::string& error) -> bool
     {
-#if defined(__APPLE__) || defined(_WIN32)
-        error = "framebuffer readback is implemented for GLCORE (Linux) only";
-        return false;
-#else
-        const int width = sapp_width();
-        const int height = sapp_height();
-        if (width <= 0 || height <= 0)
+        int width = 0;
+        int height = 0;
+        std::vector<unsigned char> pixels;
+        if (!readSwapchainRgba(width, height, pixels, error))
         {
-            error = "no framebuffer yet";
             return false;
         }
-        std::vector<unsigned char> pixels(static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
-        glReadBuffer(GL_BACK);
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-        const GLenum glError = glGetError();
-        if (glError != GL_NO_ERROR)
-        {
-            error = "glReadPixels failed";
-            return false;
-        }
-        const int stride = width * 4;
-        std::vector<unsigned char> flipped(pixels.size());
-        for (int y = 0; y < height; ++y)
-        {
-            std::memcpy(flipped.data() + static_cast<size_t>(y) * stride,
-                        pixels.data() + static_cast<size_t>(height - 1 - y) * stride,
-                        static_cast<size_t>(stride));
-        }
-        if (!stbi_write_png(path.c_str(), width, height, 4, flipped.data(), stride))
+        if (!stbi_write_png(path.c_str(), width, height, 4, pixels.data(), width * 4))
         {
             error = "failed to write PNG";
             return false;
         }
         return true;
-#endif
     }
 
     float Window::getDefaultPixelsPerUnit() const
