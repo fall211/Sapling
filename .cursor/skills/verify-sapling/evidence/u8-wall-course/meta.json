@@ -1,0 +1,41 @@
+{
+  "host": "Linux GLCORE DISPLAY=:7",
+  "dash": {
+    "x": 6.816455841064453,
+    "y": 7.894883155822754,
+    "z": 0.0
+  },
+  "climb_before": {
+    "x": 7.625,
+    "y": 6.208990097045898,
+    "z": 0.0
+  },
+  "climb": {
+    "x": 7.625,
+    "y": 4.462541580200195,
+    "z": 0.0
+  },
+  "walljump": {
+    "x": 9.66101360321045,
+    "y": 6.266261577606201,
+    "z": 0.0
+  },
+  "fell": {
+    "x": 7.2113847732543945,
+    "y": 10.511635780334473,
+    "z": 0.0
+  },
+  "after_wall": {
+    "x": 18.603103637695312,
+    "y": 8.625,
+    "z": 0.0
+  },
+  "notes": {
+    "column": "tx=8 ty=4..9, start platform (1,5,10), mid (9,11,9) then (12,18,9). No spawn pole.",
+    "dash": "jump then Shift: x 6.82 y 7.89 over the pit (lip ~6, floor 9.625). dash.png is that air burst, not idle on the start ledge.",
+    "climb": "left face x 7.625, y 6.21 -> 4.46 while holding moveRight",
+    "walljump": "facing-right jump off far face, x 9.66 y 6.27 over the pit toward EXIT (not floor 9.625)",
+    "fell": "walk-off start: x 7.21 y 10.51 YOU FELL, player in the hole",
+    "exit": "after wall-jump continue D: x 18.6 y 8.625 Need 3 gems at the heart"
+  }
+}

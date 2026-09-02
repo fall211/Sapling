@@ -177,13 +177,14 @@ void GameScene::spawnArena()
     }
 
     spawnPlatform(1, 5, 10);
-    spawnPlatform(7, 11, 9);
+    spawnPlatform(9, 11, 9);
     spawnPlatform(12, 18, 9);
-    spawnSolidTile(5, 9, true);
-    spawnSolidTile(5, 8, true);
-    spawnSolidTile(5, 7, true);
-    spawnSolidTile(5, 6, true);
-    spawnSolidTile(5, 5, true);
+    spawnSolidTile(8, 9, true);
+    spawnSolidTile(8, 8, true);
+    spawnSolidTile(8, 7, true);
+    spawnSolidTile(8, 6, true);
+    spawnSolidTile(8, 5, true);
+    spawnSolidTile(8, 4, true);
 }
 
 void GameScene::spawnPlayer()
