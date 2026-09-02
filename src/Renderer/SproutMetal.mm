@@ -14,8 +14,6 @@
 #include "sokol/sokol_gfx.h"
 #include "sokol/sokol_glue.h"
 
-#include "Renderer/Sprout.hpp"
-
 #include <cstring>
 #include <string>
 #include <vector>
@@ -34,7 +32,6 @@ auto captureMetalSwapchain(int& width, int& height, std::vector<unsigned char>& 
     }
 
     // After sg_commit, MTKView has already resolved MSAA into the drawable.
-    // The MSAA color texture is sampleCount > 1 and cannot be blit into a buffer.
     id<MTLTexture> src = drawable.texture;
     if (!src)
     {
