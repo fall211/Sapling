@@ -1,8 +1,8 @@
 {
   "host": "Linux GLCORE DISPLAY=:7",
   "dash": {
-    "x": 5.07609224319458,
-    "y": 9.625,
+    "x": 6.816455841064453,
+    "y": 7.894883155822754,
     "z": 0.0
   },
   "climb_before": {
@@ -32,7 +32,7 @@
   },
   "notes": {
     "column": "tx=8 ty=4..9, start platform (1,5,10), mid (9,11,9) then (12,18,9). No spawn pole.",
-    "dash": "spawn dash 0.05s: x 5.08 y 9.625 (not idle 3.40). dash.png is framebuffer of that burst on the start ledge.",
+    "dash": "jump then Shift: x 6.82 y 7.89 over the pit (lip ~6, floor 9.625). dash.png is that air burst, not idle on the start ledge.",
     "climb": "left face x 7.625, y 6.21 -> 4.46 while holding moveRight",
     "walljump": "facing-right jump off far face, x 9.66 y 6.27 over the pit toward EXIT (not floor 9.625)",
     "fell": "walk-off start: x 7.21 y 10.51 YOU FELL, player in the hole",
