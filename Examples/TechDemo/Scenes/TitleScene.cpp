@@ -139,7 +139,7 @@ void TitleScene::spawnUI()
     auto controls = m_entityManager->addEntity({"ui", "controls"});
     controls->addComponent<Comp::Transform>(glm::vec2(0, 70), Sprout::Pivot::BOTTOM_CENTER, true);
     controls->addComponent<Comp::Text>(
-        "A/D walk  SPACE jump  SHIFT dash  |  ESC to Quit",
+        "A/D walk  SPACE jump  SHIFT dash  hold wall  |  ESC to Quit",
         "game_font", 8, Color::Gray,
         Sprout::TextJustify::CENTER
     );

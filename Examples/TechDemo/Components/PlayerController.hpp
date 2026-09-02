@@ -33,6 +33,10 @@ namespace Comp
         float dashLeft = 0.0f;
         float dashCooldownLeft = 0.0f;
         float dashDir = 1.0f;
+        float climbSpeed = 6.0f;
+        float wallJumpSpeed = 11.0f;
+        float wallDir = 0.0f;
+        bool onWall = false;
 
         enum class Facing : uint8_t
         {

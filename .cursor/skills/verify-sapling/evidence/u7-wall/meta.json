@@ -1,0 +1,29 @@
+{
+  "host": "Linux GLCORE DISPLAY=:7",
+  "wall": {
+    "x": 4.625,
+    "y": 8.281944274902344,
+    "z": 0.0
+  },
+  "climb": {
+    "x": 4.625,
+    "y": 5.280645370483398,
+    "z": 0.0
+  },
+  "walljump": {
+    "x": 1.653594732284546,
+    "y": 6.349026679992676,
+    "z": 0.0
+  },
+  "momentum": {
+    "x": 1.375,
+    "y": 9.016745567321777,
+    "z": 0.0
+  },
+  "notes": {
+    "climb_y": "wall y 8.28 -> climb y 5.28 at x 4.625 while holding moveRight",
+    "walljump": "x 4.625 -> 1.65 (away from wall), y still airborne 6.35 vs floor 9.625",
+    "momentum": "dash into wall then wall jump x 4.625 -> 1.375 vs standing floor jump x stayed 3.40",
+    "dash_spot": "dash from spawn still hits the column at x 4.625 y 9.625"
+  }
+}
