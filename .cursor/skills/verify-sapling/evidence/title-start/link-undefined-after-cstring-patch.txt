@@ -1,0 +1,24 @@
+Interview note (not a passing proof): after a local-only #include <cstring> on Texture.cpp (reverted, not committed), the Linux Debug link of TechDemo still failed.
+
+Undefined FMOD (CMake has no UNIX FMOD link; no .so in third_party/fmod):
+  FMOD::ChannelControl::isPlaying(bool*)
+  FMOD::ChannelControl::setPitch(float)
+  FMOD::ChannelControl::setVolume(float)
+  FMOD::ChannelControl::stop()
+  FMOD::Sound::release()
+  FMOD::Sound::setLoopCount(int)
+  FMOD::Sound::setMode(unsigned int)
+  FMOD::Studio::System::create(FMOD::Studio::System**, unsigned int)
+  FMOD::Studio::System::getCoreSystem(FMOD::System**) const
+  FMOD::Studio::System::initialize(int, unsigned int, unsigned int, void*)
+  FMOD::Studio::System::release()
+  FMOD::Studio::System::update()
+  FMOD::System::createSound(char const*, unsigned int, FMOD_CREATESOUNDEXINFO*, FMOD::Sound**)
+  FMOD::System::playSound(FMOD::Sound*, FMOD::ChannelGroup*, bool, FMOD::Channel**)
+  FMOD::System::release()
+
+Also undefined Sokol Linux window/GL (CMake does not link these on UNIX):
+  X11 / Xcursor / Xi / Xkb / Xrm family (XOpenDisplay, XCreateWindow, ...)
+  OpenGL gl* (glCreateShader, glDrawArrays, ...)
+
+As-is compile (no cstring patch) stops earlier: see cmake-build.txt (std::memcpy).

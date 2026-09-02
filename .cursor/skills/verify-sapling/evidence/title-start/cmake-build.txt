@@ -1,0 +1,29 @@
+Linux is not a first-class Sapling TechDemo host in this checkout.
+CMake only links FMOD for APPLE (dylibs) and WIN32 (fmod_vc.lib + DLLs); there is no UNIX branch.
+third_party/fmod has no libfmod.so / libfmodstudio.so (mac dylibs + Windows DLLs/libs only).
+Sprout.cpp uses SOKOL_GLCORE on Linux, but CMake does not link X11, Xi, Xcursor, Xkb, or OpenGL.
+libstdc++ also errors in src/Renderer/Texture.cpp (std::memcpy without <cstring>).
+Do not stub FMOD or invent GL/X11 link lines for verification. Use macOS or Windows.
+==> cmake configure+build (expected to fail on Linux)
+-- Debug build - ASSETS_PATH set to: /workspace/Sapling/Examples/TechDemo/Assets/
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /workspace/Sapling/Examples/TechDemo/build/Debug
+[  4%] Building CXX object CMakeFiles/SaplingEngine.dir/workspace/Sapling/src/Renderer/Texture.cpp.o
+/workspace/Sapling/src/Renderer/Texture.cpp: In member function ‘bool Sprout::Texture::loadFromMemory(unsigned char*, glm::i32, glm::i32, glm::i32)’:
+/workspace/Sapling/src/Renderer/Texture.cpp:256:18: error: ‘memcpy’ is not a member of ‘std’; did you mean ‘wmemcpy’?
+  256 |             std::memcpy(m_pixels, data, dataSize);
+      |                  ^~~~~~
+      |                  wmemcpy
+/workspace/Sapling/src/Renderer/Texture.cpp:271:26: error: ‘memcpy’ is not a member of ‘std’; did you mean ‘wmemcpy’?
+  271 |                     std::memcpy(m_pixels, data, dataSize);
+      |                          ^~~~~~
+      |                          wmemcpy
+/workspace/Sapling/src/Renderer/Texture.cpp:281:22: error: ‘memcpy’ is not a member of ‘std’; did you mean ‘wmemcpy’?
+  281 |                 std::memcpy(m_pixels, data, dataSize);
+      |                      ^~~~~~
+      |                      wmemcpy
+gmake[2]: *** [CMakeFiles/SaplingEngine.dir/build.make:247: CMakeFiles/SaplingEngine.dir/workspace/Sapling/src/Renderer/Texture.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:90: CMakeFiles/SaplingEngine.dir/all] Error 2
+gmake: *** [Makefile:91: all] Error 2
+cmake --build exit=2

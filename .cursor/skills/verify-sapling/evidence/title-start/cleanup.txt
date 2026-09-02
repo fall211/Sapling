@@ -1,0 +1,4 @@
+no live PID recorded
+scratch removed: /tmp/sapling-verify-title-start-linux
+evidence kept under /workspace/Sapling/.cursor/skills/verify-sapling/evidence
+cleanup_exit=0

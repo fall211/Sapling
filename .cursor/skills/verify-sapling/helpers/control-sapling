@@ -1,0 +1,362 @@
+#!/usr/bin/env bash
+# control-sapling — process lifecycle + doctor for Sapling TechDemo.
+# Keyboard and pixels: use the desktop Computer tool against the window this helper started.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"
+TECHDEMO="$REPO_ROOT/Examples/TechDemo"
+FMOD_ROOT="$REPO_ROOT/third_party/fmod"
+
+RUN_ID="${SAPLING_VERIFY_RUN_ID:-default}"
+STATE_DIR="${SAPLING_VERIFY_DIR:-/tmp/sapling-verify-$RUN_ID}"
+STATE_FILE="$STATE_DIR/state.env"
+STDOUT_FILE="$STATE_DIR/stdout.txt"
+PID_FILE="$STATE_DIR/pid"
+DRIVE_FILE="$STATE_DIR/drive.txt"
+
+die() { echo "control-sapling: $*" >&2; exit 1; }
+blocked() { echo "control-sapling: $*" >&2; exit 2; }
+
+load_state() {
+  if [[ -f "$STATE_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$STATE_FILE"
+  fi
+}
+
+save_state() {
+  mkdir -p "$STATE_DIR"
+  cat > "$STATE_FILE" <<EOF
+SAPLING_VERIFY_RUN_ID='$RUN_ID'
+SAPLING_PID='${SAPLING_PID:-}'
+SAPLING_BIN='${SAPLING_BIN:-}'
+SAPLING_STDOUT='$STDOUT_FILE'
+SAPLING_REPO='$REPO_ROOT'
+EOF
+}
+
+os_family() {
+  case "$(uname -s)" in
+    Darwin) echo darwin ;;
+    MINGW*|MSYS*|CYGWIN*|Windows_NT) echo windows ;;
+    Linux) echo linux ;;
+    *) echo other ;;
+  esac
+}
+
+linux_block_text() {
+  cat <<'TXT'
+Linux is not a first-class Sapling TechDemo host in this checkout.
+CMake only links FMOD for APPLE (dylibs) and WIN32 (fmod_vc.lib + DLLs); there is no UNIX branch.
+third_party/fmod has no libfmod.so / libfmodstudio.so (mac dylibs + Windows DLLs/libs only).
+Sprout.cpp uses SOKOL_GLCORE on Linux, but CMake does not link X11, Xi, Xcursor, Xkb, or OpenGL.
+libstdc++ also errors in src/Renderer/Texture.cpp (std::memcpy without <cstring>).
+Do not stub FMOD or invent GL/X11 link lines for verification. Use macOS or Windows.
+TXT
+}
+
+fmod_ok() {
+  local os
+  os="$(os_family)"
+  case "$os" in
+    darwin)
+      [[ -f "$FMOD_ROOT/core/lib/libfmod.dylib" && -f "$FMOD_ROOT/studio/lib/libfmodstudio.dylib" ]]
+      ;;
+    windows)
+      [[ -f "$FMOD_ROOT/core/lib/x64/fmod.dll" || -f "$FMOD_ROOT/core/lib/x86/fmod.dll" ]]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+find_binary() {
+  local build="${1:-Debug}"
+  if [[ "$(os_family)" == darwin && "$build" == Release && -f "$TECHDEMO/build/Release/TechDemo.app/Contents/MacOS/TechDemo" ]]; then
+    echo "$TECHDEMO/build/Release/TechDemo.app/Contents/MacOS/TechDemo"
+    return
+  fi
+  for p in \
+    "$TECHDEMO/build/$build/TechDemo" \
+    "$TECHDEMO/build/$build/TechDemo.exe" \
+    "$TECHDEMO/build/$build/Debug/TechDemo" \
+    "$TECHDEMO/build/$build/Release/TechDemo"
+  do
+    if [[ -f "$p" ]]; then
+      echo "$p"
+      return
+    fi
+  done
+  return 1
+}
+
+cmd_launch() {
+  local build_only=0
+  local build_type=Debug
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --build-only) build_only=1 ;;
+      --release) build_type=Release ;;
+      *) die "unknown launch flag: $1" ;;
+    esac
+    shift
+  done
+
+  mkdir -p "$STATE_DIR"
+  : > "$STDOUT_FILE"
+
+  echo "repo=$REPO_ROOT"
+  echo "techdemo=$TECHDEMO"
+  echo "os=$(uname -s) arch=$(uname -m)"
+  echo "run_id=$RUN_ID"
+
+  [[ -d "$TECHDEMO" ]] || die "TechDemo directory missing: $TECHDEMO"
+  [[ -f "$TECHDEMO/CMakeLists.txt" ]] || die "TechDemo CMakeLists.txt missing"
+  [[ -f "$TECHDEMO/Assets/manifest.json" ]] || die "manifest.json missing"
+
+  if [[ ! -f "$TECHDEMO/Assets/Sprites/player.png" || ! -f "$TECHDEMO/Assets/Audio/bgm.wav" ]]; then
+    (cd "$TECHDEMO" && python3 generate_assets.py) || die "asset generation failed"
+  fi
+  if [[ ! -f "$TECHDEMO/Assets/Fonts/game_font.ttf" ]]; then
+    die "Assets/Fonts/game_font.ttf missing"
+  fi
+
+  local os
+  os="$(os_family)"
+  if [[ "$os" == linux ]]; then
+    linux_block_text | tee -a "$STDOUT_FILE"
+    echo "==> cmake configure+build (expected to fail on Linux)" | tee -a "$STDOUT_FILE"
+    if command -v cmake >/dev/null 2>&1; then
+      cmake -B "$TECHDEMO/build/$build_type" -DCMAKE_BUILD_TYPE="$build_type" -S "$TECHDEMO" >>"$STDOUT_FILE" 2>&1 || true
+      set +e
+      cmake --build "$TECHDEMO/build/$build_type" --parallel "$(nproc 2>/dev/null || echo 4)" >>"$STDOUT_FILE" 2>&1
+      local rc=$?
+      set -e
+      echo "cmake --build exit=$rc" | tee -a "$STDOUT_FILE"
+    else
+      echo "cmake not installed" | tee -a "$STDOUT_FILE"
+    fi
+    save_state
+    blocked "cannot start TechDemo on Linux (FMOD + Sokol GL/X11 not linked). See $STDOUT_FILE"
+  fi
+
+  if ! fmod_ok; then
+    blocked "FMOD platform libraries missing under $FMOD_ROOT"
+  fi
+
+  command -v cmake >/dev/null || die "cmake not on PATH"
+  echo "==> cmake configure $build_type"
+  cmake -B "$TECHDEMO/build/$build_type" -DCMAKE_BUILD_TYPE="$build_type" -S "$TECHDEMO"
+  echo "==> cmake build"
+  cmake --build "$TECHDEMO/build/$build_type" --parallel "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+
+  local bin
+  bin="$(find_binary "$build_type")" || die "TechDemo binary not found after build"
+  SAPLING_BIN="$bin"
+  echo "binary=$bin"
+
+  if [[ "$build_only" -eq 1 ]]; then
+    save_state
+    echo "build-only complete"
+    return 0
+  fi
+
+  if [[ -f "$PID_FILE" ]]; then
+    local old
+    old="$(cat "$PID_FILE" || true)"
+    if [[ -n "${old:-}" ]] && kill -0 "$old" 2>/dev/null; then
+      die "already running PID $old for run $RUN_ID; cleanup first"
+    fi
+  fi
+
+  echo "==> starting $bin"
+  (cd "$(dirname "$bin")" && exec "$bin") >>"$STDOUT_FILE" 2>&1 &
+  SAPLING_PID=$!
+  echo "$SAPLING_PID" > "$PID_FILE"
+  save_state
+
+  local i
+  for i in $(seq 1 50); do
+    if ! kill -0 "$SAPLING_PID" 2>/dev/null; then
+      die "TechDemo exited during startup. stdout in $STDOUT_FILE"
+    fi
+    if grep -q "Engine init completed" "$STDOUT_FILE" 2>/dev/null; then
+      echo "ready pid=$SAPLING_PID"
+      return 0
+    fi
+    sleep 0.1
+  done
+  echo "warning: started pid=$SAPLING_PID but did not see Engine init completed within 5s"
+  return 0
+}
+
+cmd_doctor() {
+  local os rc=0
+  os="$(os_family)"
+  echo "control-sapling doctor"
+  echo "repo=$REPO_ROOT"
+  echo "os=$(uname -s) arch=$(uname -m) family=$os"
+  echo "run_id=$RUN_ID"
+  echo "state_dir=$STATE_DIR"
+
+  if [[ ! -f "$REPO_ROOT/CMakeLists.txt" ]] || [[ ! -f "$TECHDEMO/Assets/manifest.json" ]]; then
+    echo "FAIL: not a Sapling checkout with TechDemo manifest"
+    rc=1
+  else
+    echo "OK: Sapling + TechDemo manifest"
+  fi
+
+  for f in \
+    "$TECHDEMO/Assets/manifest.json" \
+    "$TECHDEMO/Assets/Sprites/player.png" \
+    "$TECHDEMO/Assets/Audio/bgm.wav" \
+    "$TECHDEMO/Assets/Fonts/game_font.ttf"
+  do
+    if [[ -f "$f" ]]; then
+      echo "OK: asset $(basename "$f")"
+    else
+      echo "FAIL: missing $f"
+      rc=1
+    fi
+  done
+
+  if [[ "$os" == linux ]]; then
+    echo "FAIL: Linux launch is blocked"
+    linux_block_text
+    echo "OK: confirmed interview of CMake APPLE/WIN32-only FMOD link"
+    load_state
+    if [[ -n "${SAPLING_PID:-}" ]] && kill -0 "$SAPLING_PID" 2>/dev/null; then
+      echo "OK: recorded PID $SAPLING_PID is alive"
+    else
+      echo "FAIL: no healthy TechDemo PID (expected on Linux)"
+    fi
+    exit 2
+  fi
+
+  if fmod_ok; then
+    echo "OK: FMOD libraries for $os"
+  else
+    echo "FAIL: FMOD libraries missing for $os under $FMOD_ROOT"
+    rc=1
+  fi
+
+  load_state
+  local bin
+  if bin="$(find_binary Debug)" || bin="$(find_binary Release)"; then
+    echo "OK: binary $bin"
+  else
+    echo "FAIL: TechDemo binary not built"
+    rc=1
+  fi
+
+  if [[ -n "${SAPLING_PID:-}" ]] && kill -0 "$SAPLING_PID" 2>/dev/null; then
+    echo "OK: pid $SAPLING_PID alive"
+    if [[ -f "$STDOUT_FILE" ]] && grep -q "Engine init completed" "$STDOUT_FILE"; then
+      echo "OK: log contains Engine init completed"
+    else
+      echo "FAIL: log missing Engine init completed"
+      rc=1
+    fi
+  else
+    echo "FAIL: no running instance for this run id"
+    rc=1
+  fi
+
+  exit "$rc"
+}
+
+cmd_key() {
+  load_state
+  mkdir -p "$STATE_DIR"
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) KEY $*" >> "$DRIVE_FILE"
+  if [[ "$(os_family)" == linux ]]; then
+    blocked "no TechDemo window on Linux; do not inject keys. Logged intent to $DRIVE_FILE"
+  fi
+  echo "Recorded key intent: $*"
+  echo "Focus the window titled Sapling TechDemo (PID ${SAPLING_PID:-unknown}) with the desktop Computer tool and press that key (confirm is key-up)."
+}
+
+cmd_screenshot() {
+  local path=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --path) path="$2"; shift 2 ;;
+      *) die "usage: control-sapling screenshot --path <png>" ;;
+    esac
+  done
+  [[ -n "$path" ]] || die "screenshot requires --path"
+  mkdir -p "$(dirname "$path")"
+  load_state
+  mkdir -p "$STATE_DIR"
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) SCREENSHOT $path" >> "$DRIVE_FILE"
+  if [[ "$(os_family)" == linux ]]; then
+    blocked "no TechDemo window on Linux. Capture via Computer tool only if a window exists. Intent logged to $DRIVE_FILE"
+  fi
+  echo "Save a PNG of the Sapling TechDemo window to: $path"
+  echo "Use the desktop Computer tool; this helper does not grab pixels."
+}
+
+cmd_log_grep() {
+  local pat=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --pattern) pat="$2"; shift 2 ;;
+      *) pat="$1"; shift ;;
+    esac
+  done
+  load_state
+  [[ -f "$STDOUT_FILE" ]] || die "no stdout file $STDOUT_FILE"
+  grep -E -- "$pat" "$STDOUT_FILE" || {
+    echo "no match for /$pat/ in $STDOUT_FILE" >&2
+    exit 1
+  }
+}
+
+cmd_cleanup() {
+  load_state
+  if [[ -n "${SAPLING_PID:-}" ]] && kill -0 "$SAPLING_PID" 2>/dev/null; then
+    echo "stopping pid $SAPLING_PID"
+    kill "$SAPLING_PID" 2>/dev/null || true
+    sleep 0.3
+    if kill -0 "$SAPLING_PID" 2>/dev/null; then
+      kill -9 "$SAPLING_PID" 2>/dev/null || true
+    fi
+  else
+    echo "no live PID recorded"
+  fi
+  rm -rf "$STATE_DIR"
+  echo "scratch removed: $STATE_DIR"
+  echo "evidence kept under $SKILL_DIR/evidence"
+}
+
+usage() {
+  cat <<EOF
+usage: control-sapling <launch|doctor|key|screenshot|log-grep|cleanup> [args]
+  launch [--build-only] [--release]
+  doctor
+  key [--hold] <name> [--ms N]
+  screenshot --path <png>
+  log-grep --pattern <re>
+  cleanup
+EOF
+}
+
+main() {
+  local cmd="${1:-}"
+  shift || true
+  case "$cmd" in
+    launch) cmd_launch "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    key) cmd_key "$@" ;;
+    screenshot) cmd_screenshot "$@" ;;
+    log-grep) cmd_log_grep "$@" ;;
+    cleanup) cmd_cleanup "$@" ;;
+    -h|--help|"") usage; exit 1 ;;
+    *) usage; die "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"
