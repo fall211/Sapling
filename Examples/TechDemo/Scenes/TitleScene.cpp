@@ -91,7 +91,7 @@ void TitleScene::spawnUI()
     auto subtitle = m_entityManager->addEntity({"ui", "subtitle"});
     subtitle->addComponent<Comp::Transform>(glm::vec2(0, 160), Sprout::Pivot::TOP_CENTER, true);
     subtitle->addComponent<Comp::Text>(
-        "A Top-Down Collector",
+        "A Side-View Course",
         "game_font", 12, Color::PaleGray,
         Sprout::TextJustify::CENTER
     );
@@ -139,7 +139,7 @@ void TitleScene::spawnUI()
     auto controls = m_entityManager->addEntity({"ui", "controls"});
     controls->addComponent<Comp::Transform>(glm::vec2(0, 70), Sprout::Pivot::BOTTOM_CENTER, true);
     controls->addComponent<Comp::Text>(
-        "WASD / Arrows to Move  |  ESC to Quit",
+        "A/D walk  SPACE jump  |  ESC to Quit",
         "game_font", 8, Color::Gray,
         Sprout::TextJustify::CENTER
     );
