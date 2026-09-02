@@ -34,6 +34,7 @@ void GameScene::resetGame()
 {
     m_entityManager->clear();
     m_gemsCollected = 0;
+    m_failTimer = 0.0f;
     System::DamageState::Reset();
     spawnArena();
     spawnPlayer();
@@ -48,6 +49,23 @@ void GameScene::resetGame()
 void GameScene::update()
 {
     float dt = m_engine.deltaTime();
+
+    if (m_failTimer > 0.0f)
+    {
+        m_failTimer -= dt;
+        if (Input::isActionUp("quit"))
+        {
+            m_engine.changeScene("title");
+            return;
+        }
+        sRender(m_entityManager->getEntities());
+        if (m_failTimer <= 0.0f)
+        {
+            resetGame();
+        }
+        return;
+    }
+
     System::PlayerMovement(m_entityManager, dt, m_bounds);
     System::EnemyMovement(m_entityManager, dt);
     System::FloatMotion(m_entityManager, dt);
@@ -68,14 +86,16 @@ void GameScene::update()
         playerPos = glm::vec2(players.front()->getComponent<Comp::Transform>().position);
         pit = players.front()->getComponent<Comp::Transform>().position.y > PIT_Y;
     }
-    if (hit || pit)
+    if (pit)
+    {
+        beginFail("YOU FELL", 0.85f);
+        sRender(m_entityManager->getEntities());
+        return;
+    }
+    if (hit)
     {
         resetGame();
         sRender(m_entityManager->getEntities());
-        if (Input::isActionUp("quit"))
-        {
-            m_engine.changeScene("title");
-        }
         return;
     }
 
@@ -219,7 +239,7 @@ void GameScene::spawnHUD()
     auto hint = m_entityManager->addEntity({"hud", "hint"});
     hint->addComponent<Comp::Transform>(glm::vec2(0, 24), Sprout::Pivot::TOP_CENTER, true);
     hint->addComponent<Comp::Text>(
-        "A/D walk   SPACE jump   heart = exit",
+        "",
         "game_font", 12, Color::White,
         Sprout::TextJustify::CENTER
     );
@@ -230,6 +250,23 @@ void GameScene::spawnHUD()
         "Gems: 0/3",
         "game_font", 12, Color::Yellow,
         Sprout::TextJustify::LEFT
+    );
+}
+
+void GameScene::beginFail(const char* banner, float seconds)
+{
+    m_failTimer = seconds;
+    if (banner == nullptr || banner[0] == '\0')
+    {
+        return;
+    }
+    auto fail = m_entityManager->addEntity({"hud", "fail"});
+    fail->setName("fail");
+    fail->addComponent<Comp::Transform>(glm::vec2(0, 72), Sprout::Pivot::TOP_CENTER, true);
+    fail->addComponent<Comp::Text>(
+        banner,
+        "game_font", 28, Color::Red,
+        Sprout::TextJustify::CENTER
     );
 }
 

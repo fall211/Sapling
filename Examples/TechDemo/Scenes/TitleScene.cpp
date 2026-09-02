@@ -91,7 +91,7 @@ void TitleScene::spawnUI()
     auto subtitle = m_entityManager->addEntity({"ui", "subtitle"});
     subtitle->addComponent<Comp::Transform>(glm::vec2(0, 160), Sprout::Pivot::TOP_CENTER, true);
     subtitle->addComponent<Comp::Text>(
-        "A Side-View Course",
+        "3 gems. Then the heart.",
         "game_font", 12, Color::PaleGray,
         Sprout::TextJustify::CENTER
     );

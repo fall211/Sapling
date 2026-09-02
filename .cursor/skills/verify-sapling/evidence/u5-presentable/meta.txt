@@ -1,0 +1,7 @@
+os=Linux 6.12 x86_64
+host=box
+pid=585722
+git_rev=WIP
+branch=feat/u5-presentable
+renderer=GLCORE
+notes=title+start live on Linux. Pit/win not driven (Linux key hold does not move the player; Mac local-exec down). Spawn still 2.5,9.625. HUD gems only.

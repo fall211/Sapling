@@ -42,3 +42,4 @@ Each feature file starts with an H1 and one paragraph, then exactly four H2s: `S
 - [One-screen course](./u2-course.md) covers raised platforms, a jump gap, and no survival timer.
 - [Collect-and-retry loop](./u3-loop.md) covers three gems, one enemy, and pit/enemy retry.
 - [Finish tape](./u4-goal.md) covers the heart exit and YOU WON.
+- `u5-presentable.md` — title goal, YOU FELL, quiet HUD
