@@ -34,7 +34,8 @@
       { "name": "moveDown", "keys": ["DOWN", "S"] },
       { "name": "confirm", "keys": ["SPACE", "ENTER"] },
       { "name": "jump", "keys": ["SPACE"] },
-      { "name": "quit", "keys": ["ESCAPE"] }
+      { "name": "quit", "keys": ["ESCAPE"] },
+      { "name": "dash", "keys": ["LEFT_SHIFT", "SHIFT"] }
     ]
   },
   "scenes": [

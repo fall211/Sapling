@@ -7,14 +7,14 @@ A one-screen course: collect three gems, then touch the heart. Showcases the **S
 | Feature | How It's Used |
 |---|---|
 | **Multiple Scenes** | Title screen → Gameplay → Score screen, with transitions |
-| **Input System** | A/D walk, Space jump in game, Space/Enter confirm, ESC to quit — all via named actions |
+| **Input System** | A/D walk, Space jump, Shift dash, Space/Enter confirm, ESC to quit — all via named actions |
 | **Data Manifest** | Assets, input bindings, startup scenes, and initial scene are loaded from `Assets/manifest.json` |
 | **Sprites (Static)** | Player idle, wall tiles, floor tiles, hearts |
 | **Sprites (Animated)** | Player walk cycle (4 frames), gem spin (4 frames), enemy bounce (4 frames) |
 | **Text Rendering** | HUD score, timer, wave counter, title text, score screen rating |
 | **Audio** | Background music (looping), collect SFX, hurt SFX, scene transition, victory jingle |
-| **Custom Components** | `PlayerController` (walk/jump/coyote), `Collectible`, `FloatMotion`, `EnemyAI` |
-| **Custom Systems** | `sPlayerMovement` (gravity, jump, floor), `sCollectibles`, `sFloatMotion`, `sEnemyAI` |
+| **Custom Components** | `PlayerController` (walk/jump/coyote/dash), `Collectible`, `FloatMotion`, `EnemyAI` |
+| **Custom Systems** | `sPlayerMovement` (gravity, jump, dash, floor), `sCollectibles`, `sFloatMotion`, `sEnemyAI` |
 | **Inter-Scene Messaging** | Final score is sent from GameScene → ScoreScene via `Engine::sendToScene` |
 | **Entity Tags & Queries** | Entities tagged as `"player"`, `"collectible"`, `"enemy"`, `"hud"`, etc. |
 | **Bounding Box Collision** | Player has a `BBox` component; distance-based overlap checks for gems and enemies |

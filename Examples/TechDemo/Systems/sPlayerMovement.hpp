@@ -92,7 +92,55 @@ namespace System
             if (Input::isAction("moveLeft"))  moveX -= 1.0f;
             if (Input::isAction("moveRight")) moveX += 1.0f;
 
-            transform.velocity.x = moveX * controller.moveSpeed;
+            const float step = std::min(dt, 1.0f / 30.0f);
+
+            if (controller.dashCooldownLeft > 0.0f)
+            {
+                controller.dashCooldownLeft = std::max(0.0f, controller.dashCooldownLeft - step);
+            }
+
+            if (Input::isActionDown("dash") && controller.dashLeft <= 0.0f && controller.dashCooldownLeft <= 0.0f)
+            {
+                float dir = moveX;
+                if (dir == 0.0f)
+                {
+                    dir = controller.facing == Comp::PlayerController::Facing::LEFT ? -1.0f : 1.0f;
+                }
+                controller.dashDir = dir;
+                controller.dashLeft = controller.dashTime;
+                controller.dashCooldownLeft = controller.dashCooldown;
+                transform.velocity.x = dir * controller.dashSpeed;
+            }
+
+            if (controller.dashLeft > 0.0f)
+            {
+                controller.dashLeft = std::max(0.0f, controller.dashLeft - step);
+                transform.velocity.x = controller.dashDir * controller.dashSpeed;
+            }
+            else if (moveX != 0.0f)
+            {
+                const float walkVx = moveX * controller.moveSpeed;
+                if (walkVx > 0.0f)
+                {
+                    transform.velocity.x = std::max(transform.velocity.x, walkVx);
+                }
+                else
+                {
+                    transform.velocity.x = std::min(transform.velocity.x, walkVx);
+                }
+            }
+            else
+            {
+                const float decay = controller.dashCoast * step;
+                if (std::abs(transform.velocity.x) <= decay)
+                {
+                    transform.velocity.x = 0.0f;
+                }
+                else
+                {
+                    transform.velocity.x -= std::copysign(decay, transform.velocity.x);
+                }
+            }
 
             if (controller.grounded)
             {
@@ -118,7 +166,6 @@ namespace System
                 transform.velocity.y *= controller.jumpCut;
             }
 
-            const float step = std::min(dt, 1.0f / 30.0f);
             transform.velocity.y += controller.gravity * step;
 
             transform.position.x += transform.velocity.x * dt;
