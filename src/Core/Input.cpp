@@ -204,7 +204,7 @@ void Input::makeAxis(const std::string& name, const int positiveKey, const int n
 
 }
 
-static auto keyCodeFromManifestName(const std::string& keyName, int& keyCode) -> bool
+auto Input::keyCodeFromName(const std::string& keyName, int& keyCode) -> bool
 {
     static const std::unordered_map<std::string, int> keyCodes =
     {
@@ -293,7 +293,7 @@ void Input::loadManifest(const nlohmann::json& manifestJson, const std::string& 
 
                     int keyCode = 0;
                     const std::string keyName = keyNameJson.get<std::string>();
-                    if (!keyCodeFromManifestName(keyName, keyCode))
+                    if (!Input::keyCodeFromName(keyName, keyCode))
                     {
                         Logger::error("Input: " + sourceName + " action '" + actionName + "' has unknown key '" + keyName + "'");
                         continue;
@@ -348,13 +348,13 @@ void Input::loadManifest(const nlohmann::json& manifestJson, const std::string& 
                 const std::string positiveName = axis["positive"].get<std::string>();
                 const std::string negativeName = axis["negative"].get<std::string>();
 
-                if (!keyCodeFromManifestName(positiveName, positiveKey))
+                if (!Input::keyCodeFromName(positiveName, positiveKey))
                 {
                     Logger::error("Input: " + sourceName + " axis '" + axisName + "' has unknown positive key '" + positiveName + "'");
                     continue;
                 }
 
-                if (!keyCodeFromManifestName(negativeName, negativeKey))
+                if (!Input::keyCodeFromName(negativeName, negativeKey))
                 {
                     Logger::error("Input: " + sourceName + " axis '" + axisName + "' has unknown negative key '" + negativeName + "'");
                     continue;
@@ -364,6 +364,34 @@ void Input::loadManifest(const nlohmann::json& manifestJson, const std::string& 
             }
         }
     }
+}
+
+
+auto Input::getActionKeys(const std::string& name) -> const std::vector<int>*
+{
+    const auto it = Instance->m_actionsMap.find(name);
+    if (it == Instance->m_actionsMap.end())
+    {
+        return nullptr;
+    }
+    return &it->second;
+}
+
+void Input::injectKey(int keyCode, bool down)
+{
+    if (!Instance)
+    {
+        return;
+    }
+    if (Instance->m_keyMap.count(keyCode) == 0)
+    {
+        Instance->m_keyMap[keyCode] = std::make_shared<Key>();
+    }
+    sapp_event event{};
+    event.type = down ? SAPP_EVENTTYPE_KEY_DOWN : SAPP_EVENTTYPE_KEY_UP;
+    event.key_code = static_cast<sapp_keycode>(keyCode);
+    event.key_repeat = false;
+    update(&event);
 }
 
 auto Input::getAxis(const std::string& name) -> float

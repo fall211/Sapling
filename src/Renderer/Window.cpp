@@ -19,12 +19,18 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <cstring>
+#include <vector>
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "stb/stb_rect_pack.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
+
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <GL/gl.h>
+#endif
 
 namespace Sprout
 {
@@ -243,6 +249,50 @@ namespace Sprout
     void Window::SetEventCallback(EventCallback callback)
     {
         m_event_callback = std::move(callback);
+    }
+
+    void Window::SetPostFrameCallback(PostFrameCallback callback)
+    {
+        m_post_frame_callback = std::move(callback);
+    }
+
+    auto Window::captureFramebufferPng(const std::string& path, std::string& error) -> bool
+    {
+#if defined(__APPLE__) || defined(_WIN32)
+        error = "framebuffer readback is implemented for GLCORE (Linux) only";
+        return false;
+#else
+        const int width = sapp_width();
+        const int height = sapp_height();
+        if (width <= 0 || height <= 0)
+        {
+            error = "no framebuffer yet";
+            return false;
+        }
+        std::vector<unsigned char> pixels(static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
+        glReadBuffer(GL_BACK);
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        const GLenum glError = glGetError();
+        if (glError != GL_NO_ERROR)
+        {
+            error = "glReadPixels failed";
+            return false;
+        }
+        const int stride = width * 4;
+        std::vector<unsigned char> flipped(pixels.size());
+        for (int y = 0; y < height; ++y)
+        {
+            std::memcpy(flipped.data() + static_cast<size_t>(y) * stride,
+                        pixels.data() + static_cast<size_t>(height - 1 - y) * stride,
+                        static_cast<size_t>(stride));
+        }
+        if (!stbi_write_png(path.c_str(), width, height, 4, flipped.data(), stride))
+        {
+            error = "failed to write PNG";
+            return false;
+        }
+        return true;
+#endif
     }
 
     float Window::getDefaultPixelsPerUnit() const

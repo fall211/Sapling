@@ -124,6 +124,10 @@ class Input
         */
         static void loadManifest(const std::string& manifestPath);
         static void loadManifest(const nlohmann::json& manifestJson, const std::string& sourceName = "manifest");
+
+        static auto keyCodeFromName(const std::string& keyName, int& keyCode) -> bool;
+        static auto getActionKeys(const std::string& name) -> const std::vector<int>*;
+        static void injectKey(int keyCode, bool down);
         
         /*
             * Gets the value of the axis with the given name

@@ -15,6 +15,7 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <vector>
 
 
 class Scene;
@@ -35,6 +36,7 @@ class Engine {
     
 
     size_t m_currentFrame = 0;
+    std::string m_currentSceneName;
 
 public:
 
@@ -107,6 +109,9 @@ public:
     void changeScene(const std::string& name);
     auto getScene(const std::string& name) -> std::shared_ptr<Scene>;
     auto getCurrentScene() -> std::shared_ptr<Scene>&;
+    auto getCurrentSceneName() const -> const std::string& { return m_currentSceneName; }
+    auto hasScene(const std::string& name) const -> bool;
+    auto sceneNames() const -> std::vector<std::string>;
 
     /**
      * Sends a message to the current scene
