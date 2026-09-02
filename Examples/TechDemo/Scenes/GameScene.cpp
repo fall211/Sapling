@@ -23,6 +23,7 @@ GameScene::GameScene(Engine& engine) : Scene(engine)
     m_bounds.minY = 1.0f;
     m_bounds.maxX = ARENA_W - 1.0f;
     m_bounds.maxY = ARENA_H - 1.0f;
+    m_bounds.floorY = (ARENA_ROWS - 2) * TILE_SIZE;
 
     m_enemyBounds = { m_bounds.minX, m_bounds.minY, m_bounds.maxX, m_bounds.maxY };
 
@@ -203,8 +204,9 @@ void GameScene::spawnPlayer()
     auto player = m_entityManager->addEntity({"player"});
     player->setName("player");
 
+    const float halfH = 0.375f;
     auto& transform = player->addComponent<Comp::Transform>(
-        glm::vec2(ARENA_W / 2.0f, ARENA_H / 2.0f)
+        glm::vec2(ARENA_W / 2.0f, m_bounds.floorY - halfH)
     );
     transform.pivot = Sprout::Pivot::CENTER;
     transform.scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -212,9 +214,8 @@ void GameScene::spawnPlayer()
     auto& sprite = player->addComponent<Comp::Sprite>(AssetManager::getTexture("player"));
     sprite.setLayer(Comp::Layer::Player);
 
-    player->addComponent<Comp::PlayerController>(3.75f);
+    player->addComponent<Comp::PlayerController>(5.0f);
 
-    // Add a bounding box for potential physics-based collision
     player->addComponent<Comp::BBox>(0.75f, 0.75f);
 }
 

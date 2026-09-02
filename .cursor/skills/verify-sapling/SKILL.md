@@ -85,6 +85,7 @@ Manifest actions (`Examples/TechDemo/Assets/manifest.json`):
 | `moveUp` | UP, W |
 | `moveDown` | DOWN, S |
 | `confirm` | SPACE, ENTER |
+| `jump` | SPACE |
 | `quit` | ESCAPE |
 
 Scenes: `title` (initial) → Space starts `game` → timer/death then Space → `score` → Space replays `game`, Esc returns `title`. Esc on `title` requests quit (`sapp_request_quit`). Esc during `game` returns to `title` (does not quit). Confirm uses `Input::isActionUp` (`press` is down then up in one frame).

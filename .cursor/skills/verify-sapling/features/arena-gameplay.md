@@ -1,11 +1,11 @@
 # Arena gameplay
 
-Gameplay is a top-down collector: a player sprite in a tiled arena, spinning gems, patrolling enemies, and a HUD for score, timer, wave, hearts, and gem count. WASD or arrows move; touching gems scores; touching enemies costs hearts; Escape returns to the title.
+Gameplay is a side-view collector: a player sprite on tiled floor, spinning gems, patrolling enemies, and a HUD for score, timer, wave, hearts, and gem count. A/D walk; Space jumps; touching gems scores; touching enemies costs hearts; Escape returns to the title.
 
 ## Sub-features
 
 - `arena-hud` shows `Score:`, `Time:`, `Wave`, hearts, and `Gems:` after confirm from title.
-- `arena-move` moves the player with `moveUp`/`moveDown`/`moveLeft`/`moveRight`.
+- `arena-move` walks the player with `moveLeft`/`moveRight`. W/S does not fly.
 - `arena-collect` increases score/gem count when walking over a gem.
 - `arena-esc-title` returns to the title without ending the process.
 
@@ -22,7 +22,7 @@ Preconditions:
 - `control-sapling doctor` is clean.
 
 - **Enter arena.** Run `control-sapling ctl action confirm press`. Screenshot `evidence/arena-gameplay/hud.png`. HUD includes `Score: 0`, a `Time:` value near 60, and `Wave 1`.
-- **Move.** Hold W then D. Run `control-sapling key --hold w --ms 400` and `control-sapling key --hold d --ms 400`. The player sprite leaves center; capture `evidence/arena-gameplay/moved.png` and compare to `hud.png`.
+- **Move.** Hold D. Run `control-sapling key --hold d --ms 400`. The player walks right on the floor; capture `evidence/arena-gameplay/moved.png` and compare to `hud.png`.
 - **Collect (best effort).** Keep walking toward visible gems with WASD holds. When `Gems:` or `Score:` on the HUD increases, screenshot `evidence/arena-gameplay/scored.png`. If no gem is reached in ~10s, record that miss; do not poke collectible components.
 - **Esc to title.** Run `control-sapling ctl action quit press`. Window shows `SAPLING TECH DEMO` again; PID still alive. Screenshot `evidence/arena-gameplay/esc-title.png`.
 

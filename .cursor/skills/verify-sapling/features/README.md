@@ -15,7 +15,7 @@ This directory is the maintained source for verifying user-facing behavior of th
 ## Driving conventions
 
 - Start every recipe from the title screen unless the feature says otherwise (Esc from gameplay returns to title; Esc from title quits the process).
-- Treat action names as literal: `confirm`, `quit`, `moveLeft`, `moveRight`, `moveUp`, `moveDown`.
+- Treat action names as literal: `confirm`, `quit`, `jump`, `moveLeft`, `moveRight`, `moveUp`, `moveDown`.
 - `confirm` is edge-triggered on **key up**. A held Space does not start the game until release.
 - Drive through `control-sapling ctl` and `screenshot`. Do not use engine APIs or a Computer-tool capture as the user path.
 - Cleanup must not delete proof under `evidence/`.
@@ -37,4 +37,5 @@ Each feature file starts with an H1 and one paragraph, then exactly four H2s: `S
 - [Title screen](./title-screen.md) covers first paint, Space/Enter to start, Esc to quit.
 - [Arena gameplay](./arena-gameplay.md) covers WASD/arrows, gems, enemies, HUD, Esc back to title.
 - [Results screen](./results-screen.md) covers game-over continue, score handoff, replay, Esc to title.
-- [Named input actions](./named-input-actions.md) covers manifest bindings for confirm, quit, and movement.
+- [Named input actions](./named-input-actions.md) covers manifest bindings for confirm, quit, jump, and movement.
+- [Side-view jump feel](./u1-jump-feel.md) covers grounded idle, A/D walk, Space jump, coyote/variable height.

@@ -1,6 +1,6 @@
 # Named input actions
 
-Players drive TechDemo through named actions loaded from `Assets/manifest.json`: movement on WASD and arrows, confirm on Space and Enter, quit on Escape. The same action names are what the scenes call; the keys are data, not hard-coded scene logic.
+Players drive TechDemo through named actions loaded from `Assets/manifest.json`: walk on A/D and arrows, jump on Space, confirm on Space and Enter, quit on Escape. The same action names are what the scenes call; the keys are data, not hard-coded scene logic.
 
 ## Sub-features
 
@@ -18,7 +18,7 @@ Players drive TechDemo through named actions loaded from `Assets/manifest.json`:
 Preconditions:
 
 - Healthy TechDemo PID on title.
-- Manifest still lists `confirm` keys `SPACE`,`ENTER`; `quit` key `ESCAPE`; movement `W/A/S/D` and arrows.
+- Manifest still lists `confirm` keys `SPACE`,`ENTER`; `jump` key `SPACE`; `quit` key `ESCAPE`; walk `A/D` and arrows.
 
 - **Space confirm.** Run `control-sapling ctl action confirm press`. Arena HUD appears.
 - **Reset.** Run `control-sapling ctl action quit press` to title.
