@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "Utility/Debug.hpp"
 #include "ECS/EntityManager.hpp"
 #include "ECS/Entity.hpp"
 #include "ECS/Component.hpp"
@@ -15,22 +14,61 @@
 #include "PlayerController.hpp"
 
 #include <algorithm>
+#include <vector>
 #include <cmath>
 
 namespace System
 {
-    // Arena boundaries (in world units). +Y is down.
     struct ArenaBounds
     {
         float minX = 1.0f;
         float minY = 1.0f;
         float maxX = 19.0f;
         float maxY = 10.25f;
-        float floorY = 10.0f;
     };
+
+    struct SolidBox
+    {
+        float x = 0.0f;
+        float y = 0.0f;
+        float w = 1.0f;
+        float h = 1.0f;
+    };
+
+    inline bool overlapX(float ax, float aw, float bx, float bw)
+    {
+        return ax < bx + bw && ax + aw > bx;
+    }
+
+    inline bool overlapY(float ay, float ah, float by, float bh)
+    {
+        return ay < by + bh && ay + ah > by;
+    }
 
     inline void PlayerMovement(std::shared_ptr<EntityManager>& entityManager, float dt, const ArenaBounds& bounds = {})
     {
+        auto collect = [&](const char* tag) {
+            std::vector<SolidBox> out;
+            for (auto& tile : entityManager->getEntities(tag))
+            {
+                if (!tile->hasComponent<Comp::Transform>())
+                    continue;
+                const auto& tf = tile->getComponent<Comp::Transform>();
+                float w = 1.0f;
+                float h = 1.0f;
+                if (tile->hasComponent<Comp::BBox>())
+                {
+                    const auto& box = tile->getComponent<Comp::BBox>();
+                    w = box.w;
+                    h = box.h;
+                }
+                out.push_back({tf.position.x, tf.position.y, w, h});
+            }
+            return out;
+        };
+        const auto walls = collect("wall");
+        const auto solids = collect("solid");
+
         auto& players = entityManager->getEntities("player");
 
         for (auto& e : players)
@@ -84,22 +122,62 @@ namespace System
             transform.velocity.y += controller.gravity * step;
 
             transform.position.x += transform.velocity.x * dt;
+            const float px = transform.position.x - halfW;
+            const float py = transform.position.y - halfH;
+            for (const auto& s : walls)
+            {
+                if (!overlapX(px, halfW * 2.0f, s.x, s.w))
+                    continue;
+                if (!overlapY(py + 0.05f, halfH * 2.0f - 0.05f, s.y, s.h))
+                    continue;
+                const float tileMid = s.x + s.w * 0.5f;
+                if (transform.position.x < tileMid)
+                {
+                    transform.position.x = s.x - halfW;
+                }
+                else
+                {
+                    transform.position.x = s.x + s.w + halfW;
+                }
+            }
+
             transform.position.y += transform.velocity.y * step;
+            controller.grounded = false;
+            {
+                const float px2 = transform.position.x - halfW;
+                const float feet = transform.position.y + halfH;
+                if (transform.velocity.y >= 0.0f)
+                {
+                    for (const auto& s : solids)
+                    {
+                        if (!overlapX(px2 + 0.04f, halfW * 2.0f - 0.08f, s.x, s.w))
+                            continue;
+                        if (feet >= s.y && feet <= s.y + 0.5f)
+                        {
+                            transform.position.y = s.y - halfH;
+                            transform.velocity.y = 0.0f;
+                            controller.grounded = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    const float py2 = transform.position.y - halfH;
+                    for (const auto& s : walls)
+                    {
+                        if (!overlapX(px2 + 0.04f, halfW * 2.0f - 0.08f, s.x, s.w))
+                            continue;
+                        if (!overlapY(py2, halfH * 2.0f, s.y, s.h))
+                            continue;
+                        transform.position.y = s.y + s.h + halfH;
+                        transform.velocity.y = 0.0f;
+                    }
+                }
+            }
 
             transform.position.x = std::max(bounds.minX + halfW, std::min(bounds.maxX - halfW, transform.position.x));
-            transform.position.y = std::max(bounds.minY + halfH, transform.position.y);
-
-            const float feet = transform.position.y + halfH;
-            if (transform.velocity.y >= 0.0f && feet >= bounds.floorY)
-            {
-                transform.position.y = bounds.floorY - halfH;
-                transform.velocity.y = 0.0f;
-                controller.grounded = true;
-            }
-            else
-            {
-                controller.grounded = false;
-            }
+            transform.position.y = std::max(bounds.minY + halfH, std::min(bounds.maxY + 2.0f, transform.position.y));
 
             bool wasMoving = controller.isMoving;
             controller.isMoving = (moveX != 0.0f) && controller.grounded;

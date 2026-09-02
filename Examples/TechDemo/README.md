@@ -1,6 +1,6 @@
 # Sapling Engine — Tech Demo
 
-A side-view 2D collector that showcases the core features of the **Sapling Engine**.
+A one-screen side-view course that showcases the core features of the **Sapling Engine**.
 
 ## Features Demonstrated
 
@@ -83,7 +83,7 @@ cmake --build build/Debug
 
 ## Gameplay
 
-- Walk with A/D. Space jumps. Gravity holds you on the floor tiles.
+- Walk with A/D. Space jumps. Cross the gap onto raised floor tiles.
 - Each gem is worth 10, 20, or 50 points
 - Avoid red enemies — they take away health on contact
 - New enemy waves spawn every 20 seconds, increasing difficulty
