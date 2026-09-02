@@ -33,6 +33,7 @@
       { "name": "moveUp", "keys": ["UP", "W"] },
       { "name": "moveDown", "keys": ["DOWN", "S"] },
       { "name": "confirm", "keys": ["SPACE", "ENTER"] },
+      { "name": "jump", "keys": ["SPACE"] },
       { "name": "quit", "keys": ["ESCAPE"] }
     ]
   },

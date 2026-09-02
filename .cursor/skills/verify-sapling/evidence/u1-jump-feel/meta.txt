@@ -1,0 +1,8 @@
+os=Linux x86_64
+pid=553366
+run_id=u1-jump-feel
+display=:7
+host=box (Mac was disconnected; live Sokol GLCORE)
+git=pending-commit
+player.y grounded=9.625 midair=7.969 landed=9.625
+player.x grounded=10.000 walked=14.103
