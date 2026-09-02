@@ -1,6 +1,6 @@
 # Sapling Engine — Tech Demo
 
-A one-screen side-view course that showcases the core features of the **Sapling Engine**.
+A one-screen course: collect three gems, then touch the heart. Showcases the **Sapling Engine**.
 
 ## Features Demonstrated
 

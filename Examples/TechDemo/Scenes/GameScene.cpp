@@ -240,7 +240,7 @@ void GameScene::spawnHUD()
     auto hint = m_entityManager->addEntity({"hud", "hint"});
     hint->addComponent<Comp::Transform>(glm::vec2(0, 24), Sprout::Pivot::TOP_CENTER, true);
     hint->addComponent<Comp::Text>(
-        "A/D walk   SPACE jump   heart = exit",
+        "",
         "game_font", 12, Color::White,
         Sprout::TextJustify::CENTER
     );
