@@ -40,3 +40,4 @@ Each feature file starts with an H1 and one paragraph, then exactly four H2s: `S
 - [Named input actions](./named-input-actions.md) covers manifest bindings for confirm, quit, jump, and movement.
 - [Side-view jump feel](./u1-jump-feel.md) covers grounded idle, A/D walk, Space jump, coyote/variable height.
 - [One-screen course](./u2-course.md) covers raised platforms, a jump gap, and no survival timer.
+- [Collect-and-retry loop](./u3-loop.md) covers three gems, one enemy, and pit/enemy retry.

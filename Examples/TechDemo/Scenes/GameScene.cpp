@@ -31,8 +31,14 @@ void GameScene::init()
 void GameScene::resetGame()
 {
     m_entityManager->clear();
+    m_gemsCollected = 0;
+    System::DamageState::Reset();
     spawnArena();
     spawnPlayer();
+    spawnGem(4.0f, 9.15f);
+    spawnGem(9.0f, 8.15f);
+    spawnGem(16.0f, 7.15f);
+    spawnEnemy();
     spawnHUD();
 }
 
@@ -40,6 +46,33 @@ void GameScene::update()
 {
     float dt = m_engine.deltaTime();
     System::PlayerMovement(m_entityManager, dt, m_bounds);
+    System::EnemyMovement(m_entityManager, dt);
+    System::FloatMotion(m_entityManager, dt);
+
+    auto collected = System::CheckCollectibles(m_entityManager);
+    if (collected.totalCollected > 0)
+    {
+        m_gemsCollected += collected.totalCollected;
+        updateHUD();
+    }
+
+    bool hit = System::CheckEnemyPlayerCollision(m_entityManager, dt);
+    bool pit = false;
+    auto& players = m_entityManager->getEntities("player");
+    if (!players.empty() && players.front()->hasComponent<Comp::Transform>())
+    {
+        pit = players.front()->getComponent<Comp::Transform>().position.y > PIT_Y;
+    }
+    if (hit || pit)
+    {
+        resetGame();
+        sRender(m_entityManager->getEntities());
+        if (Input::isActionUp("quit"))
+        {
+            m_engine.changeScene("title");
+        }
+        return;
+    }
 
     if (Input::isActionUp("quit"))
     {
@@ -120,6 +153,28 @@ void GameScene::spawnPlayer()
     player->addComponent<Comp::BBox>(0.75f, 0.75f);
 }
 
+void GameScene::spawnGem(float x, float y)
+{
+    auto gem = m_entityManager->addEntity({"collectible"});
+    auto& transform = gem->addComponent<Comp::Transform>(glm::vec2(x, y));
+    transform.pivot = Sprout::Pivot::CENTER;
+    auto& sprite = gem->addComponent<Comp::Sprite>(AssetManager::getTexture("gem_spin"), 6.0f);
+    sprite.setLayer(Comp::Layer::Midground);
+    gem->addComponent<Comp::Collectible>(10, 0.875f);
+    gem->addComponent<Comp::FloatMotion>(2.0f, 0.08f);
+}
+
+void GameScene::spawnEnemy()
+{
+    auto enemy = m_entityManager->addEntity({"enemy"});
+    enemy->setName("enemy");
+    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(16.0f, 7.625f));
+    transform.pivot = Sprout::Pivot::CENTER;
+    auto& sprite = enemy->addComponent<Comp::Sprite>(AssetManager::getTexture("enemy_walk"), 5.0f);
+    sprite.setLayer(Comp::Layer::Midground);
+    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 1.2f, 1.5f);
+}
+
 void GameScene::spawnHUD()
 {
     auto hint = m_entityManager->addEntity({"hud", "hint"});
@@ -129,6 +184,24 @@ void GameScene::spawnHUD()
         "game_font", 12, Color::White,
         Sprout::TextJustify::CENTER
     );
+
+    auto gems = m_entityManager->addEntity({"hud", "gem_count"});
+    gems->addComponent<Comp::Transform>(glm::vec2(24, 24), Sprout::Pivot::TOP_LEFT, true);
+    gems->addComponent<Comp::Text>(
+        "Gems: 0/3",
+        "game_font", 12, Color::Yellow,
+        Sprout::TextJustify::LEFT
+    );
+}
+
+void GameScene::updateHUD()
+{
+    auto& gems = m_entityManager->getEntities("gem_count");
+    if (!gems.empty() && gems.front()->hasComponent<Comp::Text>())
+    {
+        gems.front()->getComponent<Comp::Text>().text =
+            "Gems: " + std::to_string(m_gemsCollected) + "/3";
+    }
 }
 
 bool GameScene::onMessage(const SceneMessage& /*message*/)

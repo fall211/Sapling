@@ -1,0 +1,8 @@
+os=Darwin arm64
+host=Tuukkas-MacBook-Air Metal
+pid=16289
+title_preview_gems=3
+course_gems=3
+pit-retry player=2.5,9.625 Gems=0/3 (not basement 10.625)
+PIT_Y=9.90
+git=24d77ddf7942d502fe5e0c6ad0c6bda28ed634e1
