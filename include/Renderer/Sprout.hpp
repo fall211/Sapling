@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <memory>
 #include <chrono>
+#include <functional>
 #include <array>
 
 #include "sokol/sokol_gfx.h"
@@ -154,12 +155,15 @@ namespace Sprout
             void SetUpdateFrameCallback(UpdateFrameCallback cb);
 
             using EventCallback = std::function<void(const sapp_event*)>;
+            using PostFrameCallback = std::function<void()>;
 
             /*
                 * Sets the event callback
                 * @param cb The callback to set
             */
             void SetEventCallback(EventCallback cb);
+            void SetPostFrameCallback(PostFrameCallback cb);
+            auto captureFramebufferPng(const std::string& path, std::string& error) -> bool;
 
             static auto sokol_main() -> sapp_desc;
 
@@ -316,6 +320,7 @@ namespace Sprout
             State m_state;
             UpdateFrameCallback m_update_frame_callback;
             EventCallback m_event_callback;
+            PostFrameCallback m_post_frame_callback;
 
             Atlas m_atlas;
             std::vector<std::shared_ptr<Sprout::Texture>> m_textures;

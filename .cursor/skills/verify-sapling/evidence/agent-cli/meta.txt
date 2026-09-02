@@ -1,0 +1,10 @@
+feature: agent-cli
+host: Linux
+git_rev: 5d6509b44ca63d493da4317d2a3d251bd0106e8d
+techdemo_pid: 524818
+port: 17321
+ping: ok pong
+screenshot: before.png 47109 bytes PNG, after.png 45904 bytes PNG, hashes differ
+action confirm: title -> game (isActionUp path)
+key D: see key-d.txt player transform
+framebuffer: glReadPixels after sg_commit (not desktop capture)

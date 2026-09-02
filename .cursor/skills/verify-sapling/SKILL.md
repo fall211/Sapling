@@ -5,9 +5,9 @@ description: "Drive and prove the Sapling TechDemo native Sokol window (title, a
 
 # Verify Sapling TechDemo
 
-Sapling is a C++20 2D ECS engine. The user-facing app is **TechDemo**, a Sokol (`sokol_app`) desktop window titled `Sapling TechDemo` (1280x720 client from a 320x180 world scaled 4x). It is not a web app and has no HTTP port. Drive the real binary with keyboard actions from `Assets/manifest.json`. Do not call engine setters or scene factories as a substitute for that path.
+Sapling is a C++20 2D ECS engine. The user-facing app is **TechDemo**, a Sokol (`sokol_app`) desktop window titled `Sapling TechDemo` (1280x720 client from a 320x180 world scaled 4x). It is not a web app and has no HTTP port. Drive the real binary. Debug: `sapling-ctl` verbs go through `Input` and the Sokol framebuffer. Do not call engine setters or scene factories as a substitute.
 
-This skill is for the next agent. Run **Doctor** before driving. If doctor is unhealthy, stop; do not invent a Linux-only stub, a headless renderer, or a test-only entry point.
+This skill is for the next agent. Run **Doctor** before driving. If doctor is unhealthy, stop; do not invent a headless renderer or a test-only entry point.
 
 ## Launch
 
@@ -24,7 +24,7 @@ cd Examples/TechDemo
 python3 generate_assets.py          # only if sprites/audio/font are missing
 cmake -B build/Debug -DCMAKE_BUILD_TYPE=Debug -S .
 cmake --build build/Debug --parallel
-./build/Debug/TechDemo              # macOS/Windows Debug; see blockers below
+./build/Debug/TechDemo              # Debug on macOS, Windows, or Linux (Linux audio is stubbed)
 ```
 
 **Ready when:** stdout contains `[INFO] Engine init completed` and a window titled `Sapling TechDemo` is owned by the PID you started. Also expect `[INFO] Input init completed`. `AssetManager::initialize` currently prints `[INFO] AudioEngine init completed` as well (same string as audio init); do not treat a second copy of that line as a second subsystem.
@@ -39,18 +39,15 @@ Optional: `control-sapling launch --build-only` configures/builds without `exec`
 
 **Teardown:** `control-sapling cleanup` (kills only the recorded PID). Do not `pkill TechDemo`.
 
-### Platform reality (do not invent a working Linux binary)
+### Platform reality
 
-Interviewed from this checkout (`CMakeLists.txt` at repo root and `Examples/TechDemo/CMakeLists.txt`, `third_party/fmod/`):
+- macOS: Metal + real FMOD dylibs.
+- Windows: D3D11 + FMOD DLLs.
+- Linux Debug: Sokol `SOKOL_GLCORE`, CMake links X11/Xi/Xcursor/OpenGL, audio uses `third_party/fmod_stub` (silent). `Texture.cpp` includes `<cstring>`.
 
-- CMake links FMOD only under `if(APPLE)` (`libfmod.dylib` / `libfmodstudio.dylib`) or `elseif(WIN32)` (`fmod_vc.lib` + DLLs). There is no UNIX/Linux branch.
-- `third_party/fmod` ships macOS dylibs and Windows x86/x64/arm64 DLLs/libs. There is **no** `libfmod.so` / `libfmodstudio.so`.
-- `src/Renderer/Sprout.cpp` selects `SOKOL_GLCORE` on non-Apple/non-Win32, so a Linux binary would also need X11, Xi, Xcursor, Xkb, and OpenGL. CMake does not add those libraries either.
-- libstdc++ GCC also fails `src/Renderer/Texture.cpp` (`std::memcpy` without `<cstring>`) before link. Apple/MSVC may hide that.
+Debug copies assets next to the executable (`ASSETS_PATH`). Release on macOS is `build/Release/TechDemo.app`. Linux audio is a stub; do not treat missing SFX as a scene-change failure.
 
-On Linux this box, after installing cmake/g++ and adding `<cstring>` locally (not kept in-tree), the Debug target compiled then failed link with undefined FMOD C++ API, `X*`/`XI*`/`Xcursor*`/`Xkb*`/`Xrm*`, and `gl*` symbols. **There is no working Linux launch path in this repo.** Do not stub FMOD or add unverified GL/X11 lines just to get a window.
-
-**Supported verification hosts:** macOS (Metal + FMOD dylibs) and Windows (D3D11 + FMOD DLLs), matching CMake. Debug copies assets next to the executable (`ASSETS_PATH` compile def). Release on macOS is `build/Release/TechDemo.app`.
+Debug TechDemo also listens on `127.0.0.1:17321` (`SAPLING_AGENT_PORT` overrides) for `sapling-ctl`.
 
 ## Doctor
 
@@ -63,8 +60,8 @@ Read-only. Answers: is *this* instance worth driving?
 Require:
 
 - Repo is the Sapling checkout (CMake + `Examples/TechDemo/Assets/manifest.json`).
-- Host is Apple or Win32 **or** doctor explicitly reports Linux as blocked (then do not drive).
-- Platform FMOD files exist under `third_party/fmod/`.
+- Host is Apple, Win32, or Linux Debug with the FMOD stub.
+- Platform FMOD files exist under `third_party/fmod/` (or `third_party/fmod_stub` on Linux).
 - `Assets/Fonts/game_font.ttf`, `Assets/Sprites/player.png`, `Assets/Audio/bgm.wav` exist.
 - After launch: recorded PID is alive, log contains `[INFO] Engine init completed`, window title is `Sapling TechDemo`.
 
@@ -74,7 +71,9 @@ Never drive a TechDemo that doctor did not attribute to this run's PID.
 
 ## Drive
 
-Harness: `control-sapling` for process/log lifecycle. Sokol has no ARIA tree and no debug port. Stable handles are **window title**, **manifest action names**, and **on-screen text** baked by the scenes. `control-sapling key` / `screenshot` record intent and the target path; they do not inject input or grab pixels. On a host where TechDemo actually opened, focus the `Sapling TechDemo` window with the desktop Computer tool, press the keys, and save PNGs to the `--path` given.
+Harness: `control-sapling` for process/log lifecycle. Debug builds also expose `sapling-ctl` (JSONL on localhost). Prefer that path. It injects through `Input` (named actions) and writes framebuffer PNGs. Do not use OS key injection or a desktop screenshot tool when `sapling-ctl` replies `ok`.
+
+Built next to TechDemo: `Examples/TechDemo/build/Debug/sapling-ctl`.
 
 Manifest actions (`Examples/TechDemo/Assets/manifest.json`):
 
@@ -90,13 +89,18 @@ Manifest actions (`Examples/TechDemo/Assets/manifest.json`):
 Scenes: `title` (initial) → Space starts `game` → timer/death then Space → `score` → Space replays `game`, Esc returns `title`. Esc on `title` requests quit (`sapp_request_quit`). Esc during `game` returns to `title` (does not quit). Confirm uses `Input::isActionUp` (key **release**).
 
 ```bash
+Examples/TechDemo/build/Debug/sapling-ctl ping
+Examples/TechDemo/build/Debug/sapling-ctl state
+Examples/TechDemo/build/Debug/sapling-ctl action confirm press
+Examples/TechDemo/build/Debug/sapling-ctl key W down
+Examples/TechDemo/build/Debug/sapling-ctl screenshot .cursor/skills/verify-sapling/evidence/<feature>/shot.png
 .cursor/skills/verify-sapling/helpers/control-sapling key space
 .cursor/skills/verify-sapling/helpers/control-sapling key --hold w --ms 400
 .cursor/skills/verify-sapling/helpers/control-sapling screenshot --path .cursor/skills/verify-sapling/evidence/<feature>/shot.png
 .cursor/skills/verify-sapling/helpers/control-sapling log-grep --pattern "Engine init completed"
 ```
 
-Focus the TechDemo window before keys. Prefer action names in recipes (`confirm`, not raw scan codes). Recipes live in `features/`.
+`control-sapling key` / `screenshot` call `sapling-ctl` when that binary exists. Confirm uses `Input::isActionUp` (`press` is down then up in one frame). Prefer action names (`confirm`). Recipes live in `features/`.
 
 ## Evidence
 
@@ -108,7 +112,7 @@ Standards:
 - Capture **before** and **after** screenshots plus the matching stdout excerpt. Title vs arena vs results are visually distinct (`SAPLING TECH DEMO` / HUD `Score:` `Time:` `Wave` / `RESULTS`).
 - Side effects: scene change SFX is FMOD-only (not observable as a file). Observable proof is the window contents and Debug/INFO lines. Game-over `Debug::log` is `Logger::debug` and only prints when the binary was compiled with `DEBUG`.
 - Record feature ID, run id, PID, host OS, and git rev in `meta.txt`.
-- If launch is impossible (Linux FMOD/X11/GL as above), store doctor + build transcript and **do not** claim the feature verified via a different path.
+- If the window cannot open, store doctor + build transcript and do not claim pixels from another surface.
 
 ## Cleanup
 
@@ -135,6 +139,6 @@ All helpers are executable. Invoke from repo root as shown.
 | `helpers/control-sapling log-grep --pattern <re>` | Grep the run's stdout file. |
 | `helpers/control-sapling cleanup` | Kill recorded PID; delete scratch dir; keep evidence. |
 
-`helpers/control-sapling` is the only supported driver. Put `control-sapling` on `PATH` only if you wrap that script; recipes below assume repo-relative invocation.
+`control-sapling` owns process lifecycle. `sapling-ctl` owns input, state, and framebuffer capture in Debug. Put either on `PATH` only as a wrap of the built/repo path.
 
 Feature map: `features/README.md`.

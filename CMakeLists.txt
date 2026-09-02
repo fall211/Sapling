@@ -18,6 +18,11 @@ set(FMOD_STUDIO_INC ${FMOD_ROOT}/studio/inc)
 set(FMOD_CORE_LIB   ${FMOD_ROOT}/core/lib)
 set(FMOD_STUDIO_LIB ${FMOD_ROOT}/studio/lib)
 
+if(UNIX AND NOT APPLE)
+    set(FMOD_CORE_INC   ${THIRD_PARTY}/fmod_stub)
+    set(FMOD_STUDIO_INC ${THIRD_PARTY}/fmod_stub)
+endif()
+
 # engine src files
 set(SAPLING_SOURCES
     ${SAPLING_SRC}/Core/Engine.cpp
@@ -37,6 +42,10 @@ set(SAPLING_SOURCES
     ${SAPLING_SRC}/Renderer/Quad2DPass.cpp
     ${SAPLING_SRC}/Utility/Physics.cpp
 )
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND SAPLING_SOURCES ${SAPLING_SRC}/Core/AgentCli.cpp)
+    list(APPEND SAPLING_COMPILE_DEFS SAPLING_AGENT_CLI)
+endif()
 
 # macOS only objective c metal backend
 if(APPLE)
@@ -86,4 +95,25 @@ elseif(WIN32)
         "${FMOD_CORE_LIB_WIN}/fmod.dll"
         "${FMOD_STUDIO_LIB_WIN}/fmodstudio.dll"
     )
+elseif(UNIX)
+    find_package(OpenGL REQUIRED)
+    find_package(X11 REQUIRED)
+    find_package(Threads REQUIRED)
+    list(APPEND SAPLING_LINK_LIBS
+        OpenGL::GL
+        ${X11_LIBRARIES}
+        Threads::Threads
+        dl
+        m
+    )
+    if(X11_Xcursor_LIB)
+        list(APPEND SAPLING_LINK_LIBS ${X11_Xcursor_LIB})
+    else()
+        list(APPEND SAPLING_LINK_LIBS Xcursor)
+    endif()
+    if(X11_Xi_LIB)
+        list(APPEND SAPLING_LINK_LIBS ${X11_Xi_LIB})
+    else()
+        list(APPEND SAPLING_LINK_LIBS Xi)
+    endif()
 endif()

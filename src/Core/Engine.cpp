@@ -5,6 +5,9 @@
 
 
 #include "Core/Engine.hpp"
+#ifdef SAPLING_AGENT_CLI
+#include "Core/AgentCli.hpp"
+#endif
 #include "Core/AssetManager.hpp"
 #include "Core/Input.hpp"
 #include "Core/ManifestLoader.hpp"
@@ -29,6 +32,11 @@ Engine::Engine(size_t viewportWidth, size_t viewportHeight, const char* title)
 void Engine::run()
 {
     m_window.SetUpdateFrameCallback([this](double dt) { this -> update(dt);});
+#ifdef SAPLING_AGENT_CLI
+    AgentCli::bind(*this);
+    AgentCli::start();
+    m_window.SetPostFrameCallback([]() { AgentCli::afterPresent(); });
+#endif
 
     m_window.Run(); // nothing after this gets called
 }
@@ -36,6 +44,9 @@ void Engine::run()
 void Engine::update(double dt)
 {
     m_deltaTime = dt;
+#ifdef SAPLING_AGENT_CLI
+    AgentCli::drain();
+#endif
 
     if (!m_currentScene)
     {
@@ -146,7 +157,24 @@ void Engine::changeScene(const std::string& name)
         m_currentScene->disable();
     }
     m_currentScene = getScene(name);
+    m_currentSceneName = name;
     m_currentScene->enable();
+}
+
+auto Engine::hasScene(const std::string& name) const -> bool
+{
+    return m_scenes.find(name) != m_scenes.end();
+}
+
+auto Engine::sceneNames() const -> std::vector<std::string>
+{
+    std::vector<std::string> names;
+    names.reserve(m_scenes.size());
+    for (const auto& entry : m_scenes)
+    {
+        names.push_back(entry.first);
+    }
+    return names;
 }
 
 auto Engine::getScene(const std::string& name) -> std::shared_ptr<Scene>

@@ -18,6 +18,11 @@ set(FMOD_STUDIO_INC "${FMOD_ROOT}/studio/inc")
 set(FMOD_CORE_LIB   "${FMOD_ROOT}/core/lib")
 set(FMOD_STUDIO_LIB "${FMOD_ROOT}/studio/lib")
 
+if(UNIX AND NOT APPLE)
+    set(FMOD_CORE_INC   "${THIRD_PARTY}/fmod_stub")
+    set(FMOD_STUDIO_INC "${THIRD_PARTY}/fmod_stub")
+endif()
+
 # ────────────────────────────────────────────────────────
 # ENGINE SOURCE FILES
 # ────────────────────────────────────────────────────────
@@ -39,6 +44,10 @@ set(SAPLING_SOURCES
     ${SAPLING_SRC}/Renderer/Quad2DPass.cpp
     ${SAPLING_SRC}/Utility/Physics.cpp
 )
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND SAPLING_SOURCES ${SAPLING_SRC}/Core/AgentCli.cpp)
+endif()
 
 if(APPLE)
     list(APPEND SAPLING_SOURCES ${SAPLING_SRC}/Renderer/SproutMetal.mm)
@@ -83,6 +92,27 @@ elseif(WIN32)
         "${FMOD_CORE_LIB_WIN}/fmod.dll"
         "${FMOD_STUDIO_LIB_WIN}/fmodstudio.dll"
     )
+elseif(UNIX)
+    find_package(OpenGL REQUIRED)
+    find_package(X11 REQUIRED)
+    find_package(Threads REQUIRED)
+    list(APPEND SAPLING_LINK_LIBS
+        OpenGL::GL
+        ${X11_LIBRARIES}
+        Threads::Threads
+        dl
+        m
+    )
+    if(X11_Xcursor_LIB)
+        list(APPEND SAPLING_LINK_LIBS ${X11_Xcursor_LIB})
+    else()
+        list(APPEND SAPLING_LINK_LIBS Xcursor)
+    endif()
+    if(X11_Xi_LIB)
+        list(APPEND SAPLING_LINK_LIBS ${X11_Xi_LIB})
+    else()
+        list(APPEND SAPLING_LINK_LIBS Xi)
+    endif()
 endif()
 
 # ────────────────────────────────────────────────────────
@@ -91,6 +121,9 @@ endif()
 add_library(SaplingEngine STATIC ${SAPLING_SOURCES})
 target_include_directories(SaplingEngine PUBLIC ${SAPLING_INCLUDE_DIRS})
 target_link_libraries(SaplingEngine PUBLIC ${SAPLING_LINK_LIBS})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(SaplingEngine PUBLIC SAPLING_AGENT_CLI)
+endif()
 
 # Metal and D3D11 use [0,1] depth range; tell GLM to match
 if(APPLE OR WIN32)
@@ -121,6 +154,12 @@ file(GLOB_RECURSE GAME_SOURCES
 add_executable(TechDemo ${GAME_SOURCES})
 
 target_link_libraries(TechDemo PRIVATE SaplingEngine)
+
+add_executable(sapling-ctl ${SAPLING_ROOT}/tools/sapling-ctl.cpp)
+target_include_directories(sapling-ctl PRIVATE ${SAPLING_INCLUDE} ${THIRD_PARTY})
+if(WIN32)
+    target_link_libraries(sapling-ctl PRIVATE ws2_32)
+endif()
 
 target_include_directories(TechDemo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

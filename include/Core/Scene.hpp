@@ -106,5 +106,7 @@ class Scene
         */
         void postUpdate();
 
+        auto getEntities() -> EntityList& { return m_entityManager->getEntities(); }
+
 
 };

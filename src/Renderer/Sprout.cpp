@@ -312,6 +312,10 @@ namespace Sprout
 
         sg_end_pass();
         sg_commit();
+        if (m_post_frame_callback)
+        {
+            m_post_frame_callback();
+        }
     }
 
     void Window::Cleanup()
