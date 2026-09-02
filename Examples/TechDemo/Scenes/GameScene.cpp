@@ -40,7 +40,7 @@ void GameScene::resetGame()
     spawnPlayer();
     spawnGem(4.6f, 9.15f);
     spawnGem(9.0f, 8.15f);
-    spawnGem(16.2f, 7.15f);
+    spawnGem(1.90f, 9.15f);
     spawnEnemy();
     spawnExit();
     spawnHUD();
@@ -67,7 +67,7 @@ void GameScene::update()
     }
 
     System::PlayerMovement(m_entityManager, dt, m_bounds);
-    System::EnemyMovement(m_entityManager, dt);
+    System::EnemyMovement(m_entityManager, dt, System::EnemyAIBounds{1.0f, 9.90f, 19.0f, 12.0f});
     System::FloatMotion(m_entityManager, dt);
 
     auto collected = System::CheckCollectibles(m_entityManager);
@@ -178,7 +178,7 @@ void GameScene::spawnArena()
 
     spawnPlatform(1, 5, 10);
     spawnPlatform(7, 11, 9);
-    spawnPlatform(12, 18, 8);
+    spawnPlatform(12, 18, 9);
 }
 
 void GameScene::spawnPlayer()
@@ -216,7 +216,7 @@ void GameScene::spawnEnemy()
 {
     auto enemy = m_entityManager->addEntity({"enemy"});
     enemy->setName("enemy");
-    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(1.20f, 9.625f));
+    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(6.50f, 11.15f));
     transform.pivot = Sprout::Pivot::CENTER;
     auto& sprite = enemy->addComponent<Comp::Sprite>(AssetManager::getTexture("enemy_walk"), 5.0f);
     sprite.setLayer(Comp::Layer::Midground);
@@ -228,11 +228,20 @@ void GameScene::spawnExit()
 {
     auto exit = m_entityManager->addEntity({"exit"});
     exit->setName("exit");
-    auto& transform = exit->addComponent<Comp::Transform>(glm::vec2(17.6f, 7.15f));
+    auto& transform = exit->addComponent<Comp::Transform>(glm::vec2(17.6f, 8.15f));
     transform.pivot = Sprout::Pivot::CENTER;
     transform.scale = glm::vec3(1.25f, 1.25f, 1.0f);
     auto& sprite = exit->addComponent<Comp::Sprite>(AssetManager::getTexture("heart"));
     sprite.setLayer(Comp::Layer::Player);
+
+    auto label = m_entityManager->addEntity({"exit", "exit_label"});
+    auto& lt = label->addComponent<Comp::Transform>(glm::vec2(16.7f, 7.50f));
+    lt.pivot = Sprout::Pivot::CENTER;
+    label->addComponent<Comp::Text>(
+        "EXIT",
+        "game_font", 2, Color::White,
+        Sprout::TextJustify::CENTER
+    );
 }
 
 void GameScene::spawnHUD()

@@ -80,6 +80,12 @@ void Input::update(const sapp_event * event)
         // check if there is a key for this code in m_keyMap
         if (Instance->m_keyMap.count(event->key_code) == 0) return;
 
+        if (event->type == SAPP_EVENTTYPE_KEY_UP &&
+            Instance->m_injectedKeys.count(static_cast<int>(event->key_code)) != 0)
+        {
+            return;
+        }
+
         const std::shared_ptr<Key> key = Instance->m_keyMap[event->key_code];
 
         if (event->type == SAPP_EVENTTYPE_KEY_DOWN)
@@ -387,11 +393,23 @@ void Input::injectKey(int keyCode, bool down)
     {
         Instance->m_keyMap[keyCode] = std::make_shared<Key>();
     }
-    sapp_event event{};
-    event.type = down ? SAPP_EVENTTYPE_KEY_DOWN : SAPP_EVENTTYPE_KEY_UP;
-    event.key_code = static_cast<sapp_keycode>(keyCode);
-    event.key_repeat = false;
-    update(&event);
+    Key& key = *Instance->m_keyMap[keyCode];
+    if (down)
+    {
+        Instance->m_injectedKeys.insert(keyCode);
+        if (!key.pressed)
+        {
+            key.justPressed = true;
+        }
+        key.pressed = true;
+        return;
+    }
+    Instance->m_injectedKeys.erase(keyCode);
+    if (key.pressed)
+    {
+        key.justReleased = true;
+    }
+    key.pressed = false;
 }
 
 auto Input::getAxis(const std::string& name) -> float
