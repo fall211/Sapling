@@ -34,12 +34,13 @@ void GameScene::resetGame()
 {
     m_entityManager->clear();
     m_gemsCollected = 0;
+    m_failTimer = 0.0f;
     System::DamageState::Reset();
     spawnArena();
     spawnPlayer();
-    spawnGem(4.0f, 9.15f);
+    spawnGem(4.6f, 9.15f);
     spawnGem(9.0f, 8.15f);
-    spawnGem(15.2f, 7.15f);
+    spawnGem(16.2f, 7.15f);
     spawnEnemy();
     spawnExit();
     spawnHUD();
@@ -48,6 +49,23 @@ void GameScene::resetGame()
 void GameScene::update()
 {
     float dt = m_engine.deltaTime();
+
+    if (m_failTimer > 0.0f)
+    {
+        m_failTimer -= dt;
+        if (Input::isActionUp("quit"))
+        {
+            m_engine.changeScene("title");
+            return;
+        }
+        sRender(m_entityManager->getEntities());
+        if (m_failTimer <= 0.0f)
+        {
+            resetGame();
+        }
+        return;
+    }
+
     System::PlayerMovement(m_entityManager, dt, m_bounds);
     System::EnemyMovement(m_entityManager, dt);
     System::FloatMotion(m_entityManager, dt);
@@ -68,14 +86,16 @@ void GameScene::update()
         playerPos = glm::vec2(players.front()->getComponent<Comp::Transform>().position);
         pit = players.front()->getComponent<Comp::Transform>().position.y > PIT_Y;
     }
-    if (hit || pit)
+    if (pit)
     {
-        resetGame();
+        beginFail("YOU FELL", 0.85f);
         sRender(m_entityManager->getEntities());
-        if (Input::isActionUp("quit"))
-        {
-            m_engine.changeScene("title");
-        }
+        return;
+    }
+    if (hit)
+    {
+        beginFail(nullptr, 0.70f);
+        sRender(m_entityManager->getEntities());
         return;
     }
 
@@ -169,7 +189,7 @@ void GameScene::spawnPlayer()
     const float halfH = 0.375f;
     const float startTop = 10.0f * TILE_SIZE;
     auto& transform = player->addComponent<Comp::Transform>(
-        glm::vec2(2.5f, startTop - halfH)
+        glm::vec2(3.4f, startTop - halfH)
     );
     transform.pivot = Sprout::Pivot::CENTER;
     transform.scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -196,11 +216,12 @@ void GameScene::spawnEnemy()
 {
     auto enemy = m_entityManager->addEntity({"enemy"});
     enemy->setName("enemy");
-    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(1.55f, 9.625f));
+    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(1.20f, 9.625f));
     transform.pivot = Sprout::Pivot::CENTER;
     auto& sprite = enemy->addComponent<Comp::Sprite>(AssetManager::getTexture("enemy_walk"), 5.0f);
     sprite.setLayer(Comp::Layer::Midground);
-    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 0.6f, 0.35f);
+    auto& ai = enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 0.5f, 0.20f);
+    ai.direction = glm::vec2(-1.0f, 0.0f);
 }
 
 void GameScene::spawnExit()
@@ -230,6 +251,23 @@ void GameScene::spawnHUD()
         "Gems: 0/3",
         "game_font", 12, Color::Yellow,
         Sprout::TextJustify::LEFT
+    );
+}
+
+void GameScene::beginFail(const char* banner, float seconds)
+{
+    m_failTimer = seconds;
+    if (banner == nullptr || banner[0] == '\0')
+    {
+        return;
+    }
+    auto fail = m_entityManager->addEntity({"hud", "fail"});
+    fail->setName("fail");
+    fail->addComponent<Comp::Transform>(glm::vec2(0, 72), Sprout::Pivot::TOP_CENTER, true);
+    fail->addComponent<Comp::Text>(
+        banner,
+        "game_font", 28, Color::Red,
+        Sprout::TextJustify::CENTER
     );
 }
 
