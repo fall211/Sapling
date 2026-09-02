@@ -1,0 +1,14 @@
+repo=/workspace/Sapling
+techdemo=/workspace/Sapling/Examples/TechDemo
+os=Linux arch=x86_64
+run_id=title-start-linux
+Linux is not a first-class Sapling TechDemo host in this checkout.
+CMake only links FMOD for APPLE (dylibs) and WIN32 (fmod_vc.lib + DLLs); there is no UNIX branch.
+third_party/fmod has no libfmod.so / libfmodstudio.so (mac dylibs + Windows DLLs/libs only).
+Sprout.cpp uses SOKOL_GLCORE on Linux, but CMake does not link X11, Xi, Xcursor, Xkb, or OpenGL.
+libstdc++ also errors in src/Renderer/Texture.cpp (std::memcpy without <cstring>).
+Do not stub FMOD or invent GL/X11 link lines for verification. Use macOS or Windows.
+==> cmake configure+build (expected to fail on Linux)
+cmake --build exit=2
+control-sapling: cannot start TechDemo on Linux (FMOD + Sokol GL/X11 not linked). See /tmp/sapling-verify-title-start-linux/stdout.txt
+launch_exit=2

@@ -1,0 +1,11 @@
+feature_id: title-start
+entry_point: title-confirm-space
+host_os: Linux 6.12.94+ x86_64
+git_rev: 0caeec14f02c2f955dfd2c31ccc67b025a55685b
+run_id: title-start-linux
+pid: none (binary did not start)
+result: NOT VERIFIED — Linux launch blocked
+why: CMake FMOD only APPLE/WIN32; no libfmod.so; Sokol GLCORE needs X11/GL not linked; Texture.cpp std::memcpy without cstring on libstdc++
+doctor_exit: see doctor.txt
+launch_exit: see launch.txt
+cleanup: scratch /tmp/sapling-verify-title-start-linux removed; this evidence directory kept

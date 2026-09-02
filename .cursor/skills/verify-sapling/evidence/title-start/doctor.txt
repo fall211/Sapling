@@ -1,0 +1,20 @@
+control-sapling doctor
+repo=/workspace/Sapling
+os=Linux arch=x86_64 family=linux
+run_id=title-start-linux
+state_dir=/tmp/sapling-verify-title-start-linux
+OK: Sapling + TechDemo manifest
+OK: asset manifest.json
+OK: asset player.png
+OK: asset bgm.wav
+OK: asset game_font.ttf
+FAIL: Linux launch is blocked
+Linux is not a first-class Sapling TechDemo host in this checkout.
+CMake only links FMOD for APPLE (dylibs) and WIN32 (fmod_vc.lib + DLLs); there is no UNIX branch.
+third_party/fmod has no libfmod.so / libfmodstudio.so (mac dylibs + Windows DLLs/libs only).
+Sprout.cpp uses SOKOL_GLCORE on Linux, but CMake does not link X11, Xi, Xcursor, Xkb, or OpenGL.
+libstdc++ also errors in src/Renderer/Texture.cpp (std::memcpy without <cstring>).
+Do not stub FMOD or invent GL/X11 link lines for verification. Use macOS or Windows.
+OK: confirmed interview of CMake APPLE/WIN32-only FMOD link
+FAIL: no healthy TechDemo PID (expected on Linux)
+doctor_exit=2
