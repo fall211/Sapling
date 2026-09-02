@@ -1,7 +1,7 @@
 os=Linux x86_64
 host=box
 pid=589633
-git_rev=WIP
+git_rev=9c9111ce7822127fff57c392563361e8bb7cff67
 branch=feat/u5-presentable
 renderer=GLCORE
 notes=title+start live. EXIT HUD visible. Slime on far ledge 12.8. Gem-lock and YOU FELL not driven (Mac down, Linux key hold no-op).
