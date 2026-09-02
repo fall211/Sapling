@@ -1,0 +1,8 @@
+os=Darwin arm64
+pid=15578
+run_id=u3-loop
+host=Tuukkas-MacBook-Air Metal
+start gems=3 enemy=1 Gems: 0/3 player=2.5,9.625
+collected gems=2 Gems: 1/3
+retry player=2.5,9.625 gems=3 Gems: 0/3
+git=pending-commit
