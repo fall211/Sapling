@@ -40,7 +40,7 @@ void GameScene::resetGame()
     spawnPlayer();
     spawnGem(4.0f, 9.15f);
     spawnGem(9.0f, 8.15f);
-    spawnGem(15.2f, 7.15f);
+    spawnGem(7.4f, 8.15f);
     spawnEnemy();
     spawnExit();
     spawnHUD();
@@ -216,11 +216,11 @@ void GameScene::spawnEnemy()
 {
     auto enemy = m_entityManager->addEntity({"enemy"});
     enemy->setName("enemy");
-    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(1.55f, 9.625f));
+    auto& transform = enemy->addComponent<Comp::Transform>(glm::vec2(12.8f, 7.625f));
     transform.pivot = Sprout::Pivot::CENTER;
     auto& sprite = enemy->addComponent<Comp::Sprite>(AssetManager::getTexture("enemy_walk"), 5.0f);
     sprite.setLayer(Comp::Layer::Midground);
-    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 0.6f, 0.35f);
+    enemy->addComponent<Comp::EnemyAI>(Comp::EnemyAI::PatrolType::HORIZONTAL, 0.4f, 0.25f);
 }
 
 void GameScene::spawnExit()
@@ -232,6 +232,18 @@ void GameScene::spawnExit()
     transform.scale = glm::vec3(1.25f, 1.25f, 1.0f);
     auto& sprite = exit->addComponent<Comp::Sprite>(AssetManager::getTexture("heart"));
     sprite.setLayer(Comp::Layer::Player);
+
+    // Doorway from wall tiles so the heart is not a 1-up.
+    spawnSolidTile(18, 7, true);
+    spawnSolidTile(18, 6, true);
+
+    auto label = m_entityManager->addEntity({"hud", "exit_label"});
+    label->addComponent<Comp::Transform>(glm::vec2(160, 24), Sprout::Pivot::TOP_LEFT, true);
+    label->addComponent<Comp::Text>(
+        "EXIT",
+        "game_font", 12, Color::White,
+        Sprout::TextJustify::LEFT
+    );
 }
 
 void GameScene::spawnHUD()

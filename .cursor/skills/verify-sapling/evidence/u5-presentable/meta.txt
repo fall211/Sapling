@@ -1,7 +1,7 @@
-os=Linux 6.12 x86_64
+os=Linux x86_64
 host=box
-pid=585722
-git_rev=64f2dfc32164abc1d5d6b9f23c2ee561a095705b
+pid=589633
+git_rev=WIP
 branch=feat/u5-presentable
 renderer=GLCORE
-notes=title+start live on Linux. Pit/win not driven (Linux key hold does not move the player; Mac local-exec down). Spawn still 2.5,9.625. HUD gems only.
+notes=title+start live. EXIT HUD visible. Slime on far ledge 12.8. Gem-lock and YOU FELL not driven (Mac down, Linux key hold no-op).
