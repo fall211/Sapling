@@ -20,6 +20,6 @@ Three gems on the U2 course, one patrolling enemy on the high ledge. Collecting 
 
 ## Gotchas
 
-- Pit threshold is player y > 10.2. Standing on the start ledge is 9.625.
+- Pit retries when player y > 9.90 (off the start ledge). Must not remain at basement y=10.625. Title preview gems are three, matching the course.
 - The enemy patrols the right platform; pit is the reliable death proof.
 - No score-screen fail state. No exit.

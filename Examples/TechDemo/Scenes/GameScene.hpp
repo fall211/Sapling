@@ -26,7 +26,7 @@ private:
     static constexpr float TILE_SIZE = 1.0f;
     static constexpr float ARENA_W = 20.0f;
     static constexpr float ARENA_H = 11.25f;
-    static constexpr float PIT_Y = 10.2f;
+    static constexpr float PIT_Y = 9.90f;
 
     System::ArenaBounds m_bounds;
     int m_gemsCollected = 0;

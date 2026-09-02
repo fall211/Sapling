@@ -107,12 +107,12 @@ void TitleScene::spawnUI()
     previewSprite.setLayer(Comp::Layer::Player);
     playerPreview->addComponent<Comp::FloatMotion>(2.0f, 6.0f);
 
-    // Floating gems around the player preview
+    // Three preview gems, matching the course
     float gemPositions[][2] = {
-        {520, 320}, {760, 320}, {560, 440}, {720, 440}, {640, 240}
+        {520, 320}, {760, 320}, {640, 240}
     };
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 3; i++)
     {
         auto gem = m_entityManager->addEntity({"ui", "preview_gem"});
         auto& gemTransform = gem->addComponent<Comp::Transform>(
