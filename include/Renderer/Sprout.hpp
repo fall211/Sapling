@@ -21,6 +21,7 @@
 #include <chrono>
 #include <functional>
 #include <array>
+#include <vector>
 
 #include "sokol/sokol_gfx.h"
 #include "sokol/sokol_app.h"
@@ -368,5 +369,9 @@ namespace Sprout
             );
 
     };
+
+#if defined(__APPLE__)
+    auto captureMetalSwapchain(int& width, int& height, std::vector<unsigned char>& rgba, std::string& error) -> bool;
+#endif
 
 } // namespace Sprout
